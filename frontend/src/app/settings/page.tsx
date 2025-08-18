@@ -37,7 +37,7 @@ interface Address {
 }
 
 // Backend API endpoint'leri
-const API_BASE_URL = 'http://localhost:5000/api'
+    const API_BASE_URL = 'http://localhost:5000/api'
 
 const mockUserSettings: UserSettings = {
   firstName: "Ahmet",
@@ -107,25 +107,49 @@ export default function SettingsPage() {
       const user = JSON.parse(userData)
       const userId = user.id
 
-      // Basit endpoint: /api/settings/{userId}
-      const response = await fetch(`${API_BASE_URL}/settings/${userId}`)
+      // Önce müşteri bilgilerini al
+      const musteriResponse = await fetch(`${API_BASE_URL}/musteri/${userId}`)
       
-      if (response.ok) {
-        const data = await response.json()
+      if (musteriResponse.ok) {
+        const musteriData = await musteriResponse.json()
         setSettings(prev => ({
           ...prev,
-          firstName: data.ad || "",
-          lastName: data.soyad || "",
-          email: data.email || "",
-          phone: data.telefon || ""
+          firstName: musteriData.ad || "",
+          lastName: musteriData.soyad || "",
+          email: musteriData.email || "",
+          phone: musteriData.telefon || ""
         }))
-      } else if (response.status === 404) {
-        console.log('Müşteri bulunamadı, test verisi ekleniyor...')
+      } else {
+        console.error('Müşteri bilgileri alınamadı')
+        setMessage({ type: 'error', text: 'Müşteri bilgileri alınamadı' })
+        return
+      }
+
+      // Sonra ayarları al
+      const settingsResponse = await fetch(`${API_BASE_URL}/settings/${userId}`)
+      
+      if (settingsResponse.ok) {
+        const settingsData = await settingsResponse.json()
+        setSettings(prev => ({
+          ...prev,
+          notifications: {
+            email: settingsData.emailBildirimleri,
+            sms: settingsData.smsBildirimleri,
+            push: settingsData.pushBildirimleri
+          },
+          privacy: {
+            profileVisible: settingsData.profilGorunurlugu,
+            orderHistory: settingsData.siparisGecmisiPaylasimi,
+            reviews: settingsData.degerlendirmePaylasimi
+          }
+        }))
+      } else if (settingsResponse.status === 404) {
+        console.log('Müşteri ayarları bulunamadı, yeni ayarlar oluşturuluyor...')
         await seedTestData()
       } else {
-        const errorText = await response.text()
-        console.error('API Error:', errorText)
-        setMessage({ type: 'error', text: 'Ayarlar yüklenirken bir hata oluştu' })
+        const errorText = await settingsResponse.text()
+        console.error('Settings API Error:', errorText)
+        setMessage({ type: 'error', text: 'Ayarlar yüklenirken hata oluştu' })
       }
     } catch (error) {
       console.error('Ayarlar yüklenirken hata:', error)
@@ -135,23 +159,46 @@ export default function SettingsPage() {
 
   const seedTestData = async () => {
     try {
+      const userData = localStorage.getItem('user')
+      if (!userData) return
+
+      const user = JSON.parse(userData)
+      const userId = user.id
+
       const response = await fetch(`${API_BASE_URL}/settings/seed`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({ musteriId: userId })
       })
 
       if (response.ok) {
         const data = await response.json()
-        console.log('Test verisi eklendi:', data)
-        await loadSettings() // Reload settings after seeding
+        console.log('Ayarlar yüklendi:', data)
+        // Ayarları state'e yükle
+        setSettings(prev => ({
+          ...prev,
+          notifications: {
+            email: data.emailBildirimleri,
+            sms: data.smsBildirimleri,
+            push: data.pushBildirimleri
+          },
+          privacy: {
+            profileVisible: data.profilGorunurlugu,
+            orderHistory: data.siparisGecmisiPaylasimi,
+            reviews: data.degerlendirmePaylasimi
+          }
+        }))
       } else {
         const errorText = await response.text()
-        console.error('Test verisi eklenirken hata:', errorText)
+        console.error('Ayarlar yüklenirken hata:', errorText)
+        // Hata durumunda varsayılan ayarları kullan
+        setMessage({ type: 'error', text: 'Ayarlar yüklenemedi, varsayılan ayarlar kullanılıyor' })
       }
     } catch (error) {
-      console.error('Test verisi eklenirken hata:', error)
+      console.error('Ayarlar yüklenirken hata:', error)
+      setMessage({ type: 'error', text: 'Bağlantı hatası, varsayılan ayarlar kullanılıyor' })
     }
   }
 
@@ -171,24 +218,51 @@ export default function SettingsPage() {
       const user = JSON.parse(userData)
       const userId = user.id
       
-      const backendData = {
+      // Önce müşteri bilgilerini güncelle
+      const musteriData = {
         ad: settings.firstName,
         soyad: settings.lastName,
         email: settings.email,
         telefon: settings.phone
       }
 
-      // Basit endpoint: /api/settings/{userId}
-      const response = await fetch(`${API_BASE_URL}/settings/${userId}`, {
+      const musteriResponse = await fetch(`${API_BASE_URL}/musteri/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(backendData)
+        body: JSON.stringify(musteriData)
       })
 
-      if (response.ok) {
-        const result = await response.json()
+      if (!musteriResponse.ok) {
+        const errorText = await musteriResponse.text()
+        console.error('Musteri API Error Response:', errorText)
+        setMessage({ type: 'error', text: 'Müşteri bilgileri güncellenirken hata oluştu' })
+        setIsLoading(false)
+        return
+      }
+
+      // Sonra ayarları güncelle
+      const settingsData = {
+        musteriId: userId,
+        emailBildirimleri: settings.notifications.email,
+        smsBildirimleri: settings.notifications.sms,
+        pushBildirimleri: settings.notifications.push,
+        profilGorunurlugu: settings.privacy.profileVisible,
+        siparisGecmisiPaylasimi: settings.privacy.orderHistory,
+        degerlendirmePaylasimi: settings.privacy.reviews
+      }
+
+      const settingsResponse = await fetch(`${API_BASE_URL}/settings/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settingsData)
+      })
+
+      if (settingsResponse.ok) {
+        const result = await settingsResponse.json()
         setMessage({ type: 'success', text: result.message || 'Ayarlar başarıyla kaydedildi!' })
         
         // localStorage'daki kullanıcı bilgilerini güncelle
@@ -206,8 +280,8 @@ export default function SettingsPage() {
           detail: { name: updatedUser.name } 
         }))
       } else {
-        const errorText = await response.text()
-        console.error('API Error Response:', errorText)
+        const errorText = await settingsResponse.text()
+        console.error('Settings API Error Response:', errorText)
         
         try {
           const errorData = JSON.parse(errorText)

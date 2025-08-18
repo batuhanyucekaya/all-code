@@ -9,10 +9,20 @@
     "Parameters": [
       {
         "Name": "loginData",
-        "Type": "backend.Models.User",
+        "Type": "backend.Controllers.LoginRequest",
         "IsRequired": true
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "backend.Controllers.AuthController",
+    "Method": "Logout",
+    "RelativePath": "api/auth/logout",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -24,11 +34,21 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "user",
-        "Type": "backend.Models.User",
+        "Name": "registerData",
+        "Type": "backend.Controllers.RegisterRequest",
         "IsRequired": true
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "backend.Controllers.AuthController",
+    "Method": "GetUser",
+    "RelativePath": "api/auth/user",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {

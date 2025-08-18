@@ -423,7 +423,6 @@ export default function Navbar() {
         </nav>
     )
 }
-
 function ListItem({ href, children }: { href: string; children: React.ReactNode }) {
     return (
         <li>
@@ -433,3 +432,4 @@ function ListItem({ href, children }: { href: string; children: React.ReactNode 
         </li>
     )
 }
+

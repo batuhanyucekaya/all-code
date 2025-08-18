@@ -4,7 +4,7 @@ import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, User, Mail, Lock, Phone, ArrowRight, CheckCircle, AlertCircle } from "lucide-react"
 
-const API_URL = "http://localhost:5000/api/musteri"
+const API_URL = "http://localhost:5000/api/auth"
 
 export default function AuthCard() {
     const router = useRouter()
@@ -37,26 +37,28 @@ export default function AuthCard() {
         }
 
         try {
-            const res = await fetch(API_URL, {
+            const res = await fetch(`${API_URL}/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(musteri),
+                credentials: "include", // Cookie'leri dahil et
+                body: JSON.stringify({
+                    email,
+                    password,
+                    fullName,
+                    telephone
+                }),
             })
 
             if (res.ok) {
-                const data = await res.json()
-                const userName = `${data.ad} ${data.soyad}`.trim()
+                const userName = fullName
                 setLoggedUserName(userName)
                 setMessage("🎉 Kayıt başarılı! Giriş yapılıyor...")
                 setMessageType('success')
                 
                 // Kullanıcı bilgilerini localStorage'a kaydet
                 localStorage.setItem('user', JSON.stringify({
-                    id: data.id,
-                    ad: data.ad,
-                    soyad: data.soyad,
-                    email: data.email,
-                    name: userName
+                    name: userName,
+                    email: email
                 }))
 
                 // Navbar'ı güncellemek için event gönder
@@ -76,10 +78,12 @@ export default function AuthCard() {
                     router.push("/")
                 }, 2000)
             } else {
-                setMessage("❌ Kayıt başarısız! Lütfen bilgilerinizi kontrol edin.")
+                const errorText = await res.text()
+                setMessage(`❌ ${errorText || 'Kayıt başarısız! Lütfen bilgilerinizi kontrol edin.'}`)
                 setMessageType('error')
             }
-        } catch {
+        } catch (error) {
+            console.error('Register error:', error)
             setMessage("🌐 Bağlantı hatası! Lütfen internet bağlantınızı kontrol edin.")
             setMessageType('error')
         } finally {
@@ -95,26 +99,35 @@ export default function AuthCard() {
         setMessageType('')
 
         try {
+            console.log('Giriş denemesi:', { email, password })
+
             const res = await fetch(`${API_URL}/login`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                credentials: "include", // Cookie'leri dahil et
                 body: JSON.stringify({ email, password }),
             })
 
+            console.log('Response status:', res.status)
+            console.log('Response headers:', res.headers)
+
             if (res.ok) {
                 const data = await res.json()
-                const userName = `${data.ad} ${data.soyad}`.trim()
+                console.log('Login response:', data)
+                
+                const userName = data.fullName || "Kullanıcı"
                 setLoggedUserName(userName)
-                setMessage(`🎉 Giriş başarılı! Hoşgeldin, ${data.ad}`)
+                setMessage(`🎉 Giriş başarılı! Hoşgeldin, ${userName}`)
                 setMessageType('success')
 
                 // Kullanıcı bilgilerini localStorage'a kaydet
                 localStorage.setItem('user', JSON.stringify({
-                    id: data.id,
-                    ad: data.ad,
-                    soyad: data.soyad,
-                    email: data.email,
-                    name: userName
+                    id: data.userId,
+                    name: userName,
+                    email: data.email || email
                 }))
 
                 // Navbar'ı güncellemek için event gönder
@@ -127,10 +140,13 @@ export default function AuthCard() {
                     router.push("/")
                 }, 2000)
             } else {
-                setMessage("❌ Email veya şifre yanlış!")
+                const errorData = await res.json().catch(() => ({ message: 'Bilinmeyen hata' }))
+                console.error('Login error:', errorData)
+                setMessage(`❌ ${errorData.message || 'Email veya şifre yanlış!'}`)
                 setMessageType('error')
             }
-        } catch {
+        } catch (error) {
+            console.error('Login catch error:', error)
             setMessage("🌐 Bağlantı hatası! Lütfen internet bağlantınızı kontrol edin.")
             setMessageType('error')
         } finally {

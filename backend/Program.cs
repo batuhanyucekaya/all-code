@@ -16,10 +16,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000")
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials(); 
+              .AllowCredentials(); // Cookie'ler için gerekli
     });
 });
 
@@ -27,12 +27,14 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/login";    
+        options.LoginPath = "/login";
         options.LogoutPath = "/logout";
         options.Cookie.Name = "YourAppAuthCookie";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.None; // Development için None
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax; // CORS için gerekli
         options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromDays(30); // 30 gün
     });
 
 var app = builder.Build();
@@ -43,11 +45,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // HTTPS yönlendirmesi geçici olarak kaldırıldı
 
-
+// CORS middleware Authorization'dan önce olmalı
 app.UseCors("AllowFrontend");
 
+// Authentication ve Authorization middleware'lerini ekle
 app.UseAuthentication();
 app.UseAuthorization();
 

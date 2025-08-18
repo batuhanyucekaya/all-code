@@ -43,13 +43,14 @@ function getCatId(p: any): number | undefined {
 }
 
 export default async function Home({ searchParams }: { searchParams?: SearchParams }) {
-  const selectedKategoriId = searchParams?.kategoriId ? Number(searchParams.kategoriId) : undefined
+  const resolvedSearchParams = await searchParams
+  const selectedKategoriId = resolvedSearchParams?.kategoriId ? Number(resolvedSearchParams.kategoriId) : undefined
 
   const res = await fetch(`${API_URL}/api/urun`, { cache: "no-store" })
   const products: any[] = res.ok ? await res.json() : []
 
 
-  const filteredByPrice = products.filter((p: any) => Number(p?.fiyat) < 300)
+  const filteredByPrice = products.filter((p: any) => Number(p?.fiyat) < 300) // 300 TL altındaki ürünleri göster
 
 
   const productCatIds = Array.from(
@@ -105,9 +106,9 @@ export default async function Home({ searchParams }: { searchParams?: SearchPara
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4">En İyi Teknoloji Ürünleri</h1>
+            <h1 className="text-4xl md:text-6xl font-bold mb-4">Uygun Fiyatlı Teknoloji</h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              %25&apos;e varan indirimlerle teknoloji dünyasını keşfedin
+              300 TL altı kaliteli ürünlerle teknoloji dünyasını keşfedin
             </p>
           </div>
         </div>
@@ -132,8 +133,8 @@ export default async function Home({ searchParams }: { searchParams?: SearchPara
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">İndirimli Ürünler</h2>
-          <p className="text-lg text-gray-600">En popüler ürünlerimizi keşfedin</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">300 TL Altı Ürünler</h2>
+          <p className="text-lg text-gray-600">Uygun fiyatlı teknoloji ürünlerini keşfedin</p>
         </div>
 
         {filtered.length === 0 ? (

@@ -23,7 +23,7 @@ export default function MusteriPage() {
     })
 
     useEffect(() => {
-        fetch("http://localhost:5000/api/musteri")
+                    fetch("http://localhost:5000/api/musteri")
             .then((res) => res.json())
             .then((data) => setMusteriler(data))
             .catch((err) => console.error("Müşteri verisi alınamadı:", err))

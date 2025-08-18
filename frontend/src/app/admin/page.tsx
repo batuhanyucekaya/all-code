@@ -92,7 +92,7 @@ export default function AdminUrunlerPage() {
 
     const fetchUrunler = () => {
         setIsLoading(true)
-        fetch("http://localhost:5000/api/urun")
+                    fetch("http://localhost:5000/api/urun")
             .then((res) => res.json())
             .then((data) => {
                 setUrunler(data)

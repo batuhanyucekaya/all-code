@@ -165,6 +165,34 @@ namespace backend.Controllers
             }
         }
 
+        // DELETE: api/comments/admin/5 - Admin için yorum silme
+        [HttpDelete("admin/{id}")]
+        public async Task<IActionResult> DeleteCommentByAdmin(int id)
+        {
+            try
+            {
+                var comment = await _context.Comments
+                    .Include(c => c.User)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+                
+                if (comment == null)
+                {
+                    return NotFound("Yorum bulunamadı");
+                }
+
+                _context.Comments.Remove(comment);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Admin tarafından yorum silindi. CommentId: {CommentId}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Admin yorum silme hatası. CommentId: {CommentId}", id);
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
+
         // GET: api/comments/stats?productId=1
         [HttpGet("stats")]
         public async Task<IActionResult> GetCommentStats([FromQuery] int productId)

@@ -18,6 +18,9 @@ namespace backend.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Comment> Comments { get; set; }
         public DbSet<MusteriAyarlari> MusteriAyarlari { get; set; }
+        public DbSet<Sepet> Sepet { get; set; }
+        public DbSet<Favori> Favoriler { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -28,6 +31,9 @@ namespace backend.Data
             ConfigureUserModel(modelBuilder);  // User modeli eklendi
             ConfigureCommentModel(modelBuilder);  // Comment modeli eklendi
             ConfigureMusteriAyarlariModel(modelBuilder);  // MusteriAyarlari modeli eklendi
+            ConfigureSepetModel(modelBuilder);  // Sepet modeli eklendi
+            ConfigureFavoriModel(modelBuilder);  // Favori modeli eklendi
+            ConfigurePasswordResetTokenModel(modelBuilder);  // PasswordResetToken modeli eklendi
 
             // Tüm tablolar için ortak ayarlar
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
@@ -108,6 +114,11 @@ namespace backend.Data
                 entity.Property(e => e.Email)
                       .HasColumnName("email")
                       .HasMaxLength(100)
+                      .IsRequired();
+
+                entity.Property(e => e.Password)
+                      .HasColumnName("Password")
+                      .HasMaxLength(255)
                       .IsRequired();
 
                 entity.Property(e => e.Telefon)
@@ -267,6 +278,74 @@ namespace backend.Data
             });
         }
 
+        // Sepet Modeli konfigürasyonu
+        private void ConfigureSepetModel(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Sepet>(entity =>
+            {
+                entity.ToTable("bag");
+
+                entity.HasKey(e => e.Id)
+                      .HasName("pk_bag");
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("id")
+                      .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.MusteriId)
+                      .HasColumnName("musteri_id")
+                      .IsRequired();
+
+                entity.Property(e => e.SiparisTarihi)
+                      .HasColumnName("siparis_tarihi")
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // Foreign key relationship
+                entity.HasOne(e => e.Musteri)
+                      .WithMany()
+                      .HasForeignKey(e => e.MusteriId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Index
+                entity.HasIndex(e => e.MusteriId)
+                      .HasDatabaseName("ix_bag_musteri_id");
+            });
+        }
+
+        // Favori Modeli konfigürasyonu
+        private void ConfigureFavoriModel(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Favori>(entity =>
+            {
+                entity.ToTable("fav");
+
+                entity.HasKey(e => e.Id)
+                      .HasName("pk_fav");
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("id")
+                      .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.MusteriId)
+                      .HasColumnName("musteri_id")
+                      .IsRequired();
+
+                entity.Property(e => e.SiparisTarihi)
+                      .HasColumnName("siparis_tarihi")
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // Foreign key relationship
+                entity.HasOne(e => e.Musteri)
+                      .WithMany()
+                      .HasForeignKey(e => e.MusteriId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Index
+                entity.HasIndex(e => e.MusteriId)
+                      .HasDatabaseName("ix_fav_musteri_id");
+            });
+        }
+
         public override int SaveChanges()
         {
             // Kayıt işlemleri öncesi otomatik işlemler
@@ -281,6 +360,59 @@ namespace backend.Data
                 }
             }
             return base.SaveChanges();
+        }
+
+        private void ConfigurePasswordResetTokenModel(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<PasswordResetToken>(entity =>
+            {
+                entity.ToTable("password_reset_tokens");
+
+                entity.HasKey(e => e.Id)
+                      .HasName("pk_password_reset_tokens");
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("id")
+                      .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.MusteriId)
+                      .HasColumnName("musteri_id")
+                      .IsRequired();
+
+                entity.Property(e => e.Token)
+                      .HasColumnName("token")
+                      .HasMaxLength(255)
+                      .IsRequired();
+
+                entity.Property(e => e.ExpiresAt)
+                      .HasColumnName("expires_at")
+                      .IsRequired();
+
+                entity.Property(e => e.IsUsed)
+                      .HasColumnName("is_used")
+                      .HasDefaultValue(false);
+
+                entity.Property(e => e.CreatedAt)
+                      .HasColumnName("created_at")
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // Foreign key relationship
+                entity.HasOne(e => e.Musteri)
+                      .WithMany()
+                      .HasForeignKey(e => e.MusteriId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Indexes
+                entity.HasIndex(e => e.Token)
+                      .IsUnique()
+                      .HasDatabaseName("ix_password_reset_tokens_token");
+
+                entity.HasIndex(e => e.MusteriId)
+                      .HasDatabaseName("ix_password_reset_tokens_musteri_id");
+
+                entity.HasIndex(e => e.ExpiresAt)
+                      .HasDatabaseName("ix_password_reset_tokens_expires_at");
+            });
         }
     }
 

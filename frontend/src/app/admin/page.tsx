@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import AdminNavbar from "@/app/components/admin-navbar"
 import AdminProtectedLayout from "../components/admin-protected-layout"
 import { Plus, Edit, Trash2, Package, Users, Settings, Eye, EyeOff } from "lucide-react"
 
@@ -14,6 +13,24 @@ type Urun = {
     kategori_id: number
     alt_kategori_id: number
     resim_url: string
+}
+
+type Musteri = {
+    id: number
+    ad: string
+    soyad: string
+    email: string
+    telefon: string
+}
+
+type Comment = {
+    id: number
+    productId: number
+    userId: number
+    userName: string
+    rating: number
+    body: string
+    createdAt: string
 }
 
 const kategoriler = [
@@ -86,27 +103,93 @@ const menuItems = ["Ürünler", "Müşteriler", "Ayarlar"]
 export default function AdminUrunlerPage() {
     const [activeMenu, setActiveMenu] = useState("Ürünler")
     const [urunler, setUrunler] = useState<Urun[]>([])
+    const [filteredUrunler, setFilteredUrunler] = useState<Urun[]>([])
+    const [musteriler, setMusteriler] = useState<Musteri[]>([])
     const [showForm, setShowForm] = useState(false)
     const [duzenlenenUrun, setDuzenlenenUrun] = useState<Urun | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [selectedCategory, setSelectedCategory] = useState("")
+    const [selectedSubCategory, setSelectedSubCategory] = useState("")
 
     const fetchUrunler = () => {
         setIsLoading(true)
-                    fetch("http://localhost:5000/api/urun")
+        fetch("http://localhost:5000/api/urun")
             .then((res) => res.json())
             .then((data) => {
                 setUrunler(data)
+                setFilteredUrunler(data)
                 setIsLoading(false)
             })
-            .catch((err) => {
-                console.error("API bağlantı hatası:", err)
+            .catch((error) => {
+                console.error("Ürünler yüklenirken hata:", error)
                 setIsLoading(false)
             })
     }
 
     useEffect(() => {
         fetchUrunler()
+        fetchMusteriler()
     }, [])
+
+    const fetchMusteriler = () => {
+        fetch("http://localhost:5000/api/musteri")
+            .then((res) => res.json())
+            .then((data) => setMusteriler(data))
+            .catch((error) => {
+                console.error("Müşteriler yüklenirken hata:", error)
+            })
+    }
+
+    const handleMusteriEdit = (musteri: Musteri) => {
+        // Müşteri düzenleme modal'ı açılabilir
+        alert(`Müşteri düzenleme: ${musteri.ad} ${musteri.soyad}`)
+    }
+
+    const handleMusteriDelete = async (id: number) => {
+        if (!confirm("Bu müşteriyi silmek istediğinize emin misiniz?")) return
+        
+        try {
+            const res = await fetch(`http://localhost:5000/api/musteri/${id}`, {
+                method: "DELETE",
+            })
+            if (res.ok) {
+                alert("Müşteri başarıyla silindi.")
+                fetchMusteriler()
+            } else {
+                alert("Silme işlemi başarısız oldu.")
+            }
+        } catch {
+            alert("Sunucuya bağlanırken hata oluştu.")
+        }
+    }
+
+    // Arama ve filtreleme fonksiyonu
+    useEffect(() => {
+        let filtered = urunler
+
+        // Metin araması
+        if (searchTerm) {
+            filtered = filtered.filter(urun =>
+                urun.isim.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                urun.aciklama.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+        }
+
+        // Kategori filtresi
+        if (selectedCategory) {
+            const categoryId = parseInt(selectedCategory)
+            filtered = filtered.filter(urun => urun.kategori_id === categoryId)
+        }
+
+        // Alt kategori filtresi
+        if (selectedSubCategory) {
+            const subCategoryId = parseInt(selectedSubCategory)
+            filtered = filtered.filter(urun => urun.alt_kategori_id === subCategoryId)
+        }
+
+        setFilteredUrunler(filtered)
+    }, [urunler, searchTerm, selectedCategory, selectedSubCategory])
 
     const handleDelete = async (id: number) => {
         if (!confirm("Bu ürünü silmek istediğine emin misin?")) return
@@ -127,195 +210,320 @@ export default function AdminUrunlerPage() {
 
     return (
         <AdminProtectedLayout>
-            <div className="flex h-screen bg-gray-50">
-                {/* Sidebar */}
-                <AdminNavbar menuItems={menuItems} activeItem={activeMenu} onSelect={setActiveMenu} />
+            <div className="p-4 sm:p-6 lg:p-8">
+                    {/* Header */}
+                    <div className="mb-6 sm:mb-8">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Admin Paneli</h1>
+                        <p className="text-sm sm:text-base text-gray-600">Ürünleri ve sistemi yönetin</p>
+                    </div>
 
-                {/* Ana içerik */}
-                <div className="flex-grow p-8 overflow-auto">
+                    {/* Menu Tabs */}
+                    <div className="border-b border-gray-200 mb-6 sm:mb-8">
+                        <nav className="-mb-px flex flex-wrap sm:flex-nowrap space-x-2 sm:space-x-8 overflow-x-auto no-scrollbar">
+                            {menuItems.map((item) => (
+                                <button
+                                    key={item}
+                                    onClick={() => setActiveMenu(item)}
+                                    className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
+                                        activeMenu === item
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    {item}
+                                </button>
+                            ))}
+                        </nav>
+                    </div>
+
+                    {/* Content */}
                     {activeMenu === "Ürünler" && (
-                        <>
-                            {!showForm && (
-                                <>
-                                    {/* Header */}
-                                    <div className="mb-8">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div>
-                                                <h1 className="text-3xl font-bold text-gray-800 mb-2">Ürün Yönetimi</h1>
-                                                <p className="text-gray-600">Tüm ürünleri görüntüleyin ve yönetin</p>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setDuzenlenenUrun(null)
-                                                    setShowForm(true)
-                                                }}
-                                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center"
-                                            >
-                                                <Plus className="h-5 w-5 mr-2" />
-                                                Yeni Ürün Ekle
-                                            </button>
-                                        </div>
-
-                                        {/* İstatistikler */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                                                <div className="flex items-center">
-                                                    <div className="p-3 bg-blue-100 rounded-xl">
-                                                        <Package className="h-8 w-8 text-blue-600" />
-                                                    </div>
-                                                    <div className="ml-4">
-                                                        <p className="text-sm font-medium text-gray-600">Toplam Ürün</p>
-                                                        <p className="text-2xl font-bold text-gray-800">{urunler.length}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                                                <div className="flex items-center">
-                                                    <div className="p-3 bg-green-100 rounded-xl">
-                                                        <Package className="h-8 w-8 text-green-600" />
-                                                    </div>
-                                                    <div className="ml-4">
-                                                        <p className="text-sm font-medium text-gray-600">Stokta Olan</p>
-                                                        <p className="text-2xl font-bold text-gray-800">
-                                                            {urunler.filter(u => u.stok > 0).length}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                                                <div className="flex items-center">
-                                                    <div className="p-3 bg-red-100 rounded-xl">
-                                                        <Package className="h-8 w-8 text-red-600" />
-                                                    </div>
-                                                    <div className="ml-4">
-                                                        <p className="text-sm font-medium text-gray-600">Stok Dışı</p>
-                                                        <p className="text-2xl font-bold text-gray-800">
-                                                            {urunler.filter(u => u.stok === 0).length}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Ürün Tablosu */}
-                                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                                        <div className="px-6 py-4 border-b border-gray-100">
-                                            <h2 className="text-xl font-semibold text-gray-800">Ürün Listesi</h2>
-                                        </div>
-                                        
-                                        {isLoading ? (
-                                            <div className="p-8 text-center">
-                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                                                <p className="text-gray-600">Ürünler yükleniyor...</p>
-                                            </div>
-                                        ) : urunler.length === 0 ? (
-                                            <div className="p-8 text-center">
-                                                <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                                                <p className="text-gray-600 text-lg">Henüz ürün bulunmuyor</p>
-                                                <p className="text-gray-500">Yeni ürün eklemek için yukarıdaki butonu kullanın</p>
-                                            </div>
-                                        ) : (
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full">
-                                                    <thead className="bg-gray-50">
-                                                        <tr>
-                                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">ID</th>
-                                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Ürün Adı</th>
-                                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Fiyat</th>
-                                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Stok</th>
-                                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Durum</th>
-                                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">İşlemler</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-100">
-                                                        {urunler.map((urun) => (
-                                                            <tr key={urun.id} className="hover:bg-gray-50 transition-colors duration-200">
-                                                                <td className="px-6 py-4 text-sm text-gray-900 font-medium">#{urun.id}</td>
-                                                                <td className="px-6 py-4">
-                                                                    <div>
-                                                                        <p className="text-sm font-medium text-gray-900">{urun.isim}</p>
-                                                                        <p className="text-sm text-gray-500 truncate max-w-xs">{urun.aciklama}</p>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-sm font-semibold text-gray-900">{urun.fiyat} ₺</td>
-                                                                <td className="px-6 py-4 text-sm text-gray-900">{urun.stok}</td>
-                                                                <td className="px-6 py-4">
-                                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                                        urun.stok > 0 
-                                                                            ? 'bg-green-100 text-green-800' 
-                                                                            : 'bg-red-100 text-red-800'
-                                                                    }`}>
-                                                                        {urun.stok > 0 ? 'Stokta' : 'Stok Dışı'}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setDuzenlenenUrun(urun)
-                                                                                setShowForm(true)
-                                                                            }}
-                                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                                                                            title="Düzenle"
-                                                                        >
-                                                                            <Edit className="h-4 w-4" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleDelete(urun.id)}
-                                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                                                                            title="Sil"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-
-                            {showForm && (
-                                <UrunForm
-                                    kategoriler={kategoriler}
-                                    urun={duzenlenenUrun}
-                                    onCancel={() => setShowForm(false)}
-                                    onSuccess={() => {
-                                        setShowForm(false)
-                                        fetchUrunler()
+                        <div>
+                            {/* Actions */}
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Ürünler</h2>
+                                <button
+                                    onClick={() => {
+                                        setDuzenlenenUrun(null)
+                                        setShowForm(true)
                                     }}
-                                />
+                                    className="w-full sm:w-auto bg-blue-600 text-white py-2 sm:py-3 px-4 sm:px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base touch-manipulation"
+                                >
+                                    <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    <span>Yeni Ürün Ekle</span>
+                                </button>
+                            </div>
+
+                            {/* Arama ve Filtreleme */}
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    {/* Arama */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Arama</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ürün adı veya açıklama..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    {/* Kategori Filtresi */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
+                                        <select
+                                            value={selectedCategory}
+                                            onChange={(e) => {
+                                                setSelectedCategory(e.target.value)
+                                                setSelectedSubCategory("")
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        >
+                                            <option value="">Tüm Kategoriler</option>
+                                            {kategoriler.map((kategori) => (
+                                                <option key={kategori.id} value={kategori.id}>
+                                                    {kategori.ad}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Alt Kategori Filtresi */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Alt Kategori</label>
+                                        <select
+                                            value={selectedSubCategory}
+                                            onChange={(e) => setSelectedSubCategory(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            disabled={!selectedCategory}
+                                        >
+                                            <option value="">Tüm Alt Kategoriler</option>
+                                            {selectedCategory && kategoriler
+                                                .find(k => k.id === parseInt(selectedCategory))
+                                                ?.alt.map((altKategori) => (
+                                                    <option key={altKategori.id} value={altKategori.id}>
+                                                        {altKategori.ad}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Sonuç Sayısı */}
+                                    <div className="flex items-end">
+                                        <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                                            <span className="text-sm text-gray-600">
+                                                {filteredUrunler.length} ürün bulundu
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Loading */}
+                            {isLoading && (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                        <p className="text-gray-600">Yükleniyor...</p>
+                                    </div>
+                                </div>
                             )}
-                        </>
+
+                            {/* Products Grid */}
+                            {!isLoading && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                    {filteredUrunler.map((urun) => (
+                                        <div key={urun.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+                                            <div className="aspect-square mb-4 bg-gray-50 rounded-lg overflow-hidden">
+                                                <img
+                                                    src={urun.resim_url}
+                                                    alt={urun.isim}
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            </div>
+                                            
+                                            <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base line-clamp-2">
+                                                {urun.isim}
+                                            </h3>
+                                            
+                                            <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2">
+                                                {urun.aciklama}
+                                            </p>
+                                            
+                                            <div className="flex items-center justify-between mb-4">
+                                                <span className="text-lg font-bold text-gray-900">{urun.fiyat} ₺</span>
+                                                <span className="text-sm text-gray-500">Stok: {urun.stok}</span>
+                                            </div>
+                                            
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setDuzenlenenUrun(urun)
+                                                        setShowForm(true)
+                                                    }}
+                                                    className="flex-1 bg-blue-100 text-blue-600 py-2 px-3 rounded-lg hover:bg-blue-200 transition-colors text-xs sm:text-sm touch-manipulation flex items-center justify-center space-x-1"
+                                                >
+                                                    <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                    <span>Düzenle</span>
+                                                </button>
+                                                
+                                                <button
+                                                    onClick={() => handleDelete(urun.id)}
+                                                    className="flex-1 bg-red-100 text-red-600 py-2 px-3 rounded-lg hover:bg-red-200 transition-colors text-xs sm:text-sm touch-manipulation flex items-center justify-center space-x-1"
+                                                >
+                                                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                    <span>Sil</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Ürün Ekleme/Düzenleme Modal */}
+                            {showForm && (
+                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
+                                        <button
+                                            onClick={() => setShowForm(false)}
+                                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        <UrunForm
+                                            kategoriler={kategoriler}
+                                            urun={duzenlenenUrun}
+                                            onCancel={() => setShowForm(false)}
+                                            onSuccess={() => {
+                                                setShowForm(false)
+                                                fetchUrunler()
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
 
-                    {/* Müşteriler Sayfası */}
                     {activeMenu === "Müşteriler" && (
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                            <div className="text-center">
-                                <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                                <h2 className="text-2xl font-bold text-gray-800 mb-2">Müşteri Yönetimi</h2>
-                                <p className="text-gray-600">Bu özellik yakında eklenecek</p>
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Müşteriler</h2>
+                            </div>
+
+                            {/* Müşteri Listesi */}
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    ID
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Ad Soyad
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Email
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Telefon
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    İşlemler
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {musteriler.map((musteri) => (
+                                                <tr key={musteri.id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {musteri.id}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {musteri.ad} {musteri.soyad}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {musteri.email}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {musteri.telefon}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                        <button
+                                                            onClick={() => handleMusteriEdit(musteri)}
+                                                            className="text-blue-600 hover:text-blue-900 mr-3"
+                                                        >
+                                                            Düzenle
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleMusteriDelete(musteri.id)}
+                                                            className="text-red-600 hover:text-red-900"
+                                                        >
+                                                            Sil
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Ayarlar Sayfası */}
                     {activeMenu === "Ayarlar" && (
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                            <div className="text-center">
-                                <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                                <h2 className="text-2xl font-bold text-gray-800 mb-2">Sistem Ayarları</h2>
-                                <p className="text-gray-600">Bu özellik yakında eklenecek</p>
+                        <div className="space-y-6">
+                            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Şifre Değiştir</h2>
+                            
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-md">
+                                <form className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Mevcut Şifre
+                                        </label>
+                                        <input
+                                            type="password"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Mevcut şifrenizi girin"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Yeni Şifre
+                                        </label>
+                                        <input
+                                            type="password"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Yeni şifrenizi girin"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Yeni Şifre (Tekrar)
+                                        </label>
+                                        <input
+                                            type="password"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Yeni şifrenizi tekrar girin"
+                                        />
+                                    </div>
+                                    
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        Şifreyi Değiştir
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     )}
-                </div>
             </div>
         </AdminProtectedLayout>
     )
@@ -338,6 +546,8 @@ function UrunForm({ kategoriler, urun, onCancel, onSuccess }: UrunFormProps) {
     const [altKategoriler, setAltKategoriler] = useState<{ id: number; ad: string }[]>([])
     const [resimUrl, setResimUrl] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [comments, setComments] = useState<Comment[]>([])
+    const [showComments, setShowComments] = useState(false)
 
     useEffect(() => {
         if (urun) {
@@ -367,6 +577,45 @@ function UrunForm({ kategoriler, urun, onCancel, onSuccess }: UrunFormProps) {
             setAltKategoriler([])
         }
     }, [kategoriId, kategoriler])
+
+    // Yorumları yükle
+    useEffect(() => {
+        if (urun && showComments) {
+            fetchComments(urun.id)
+        }
+    }, [urun, showComments])
+
+    const fetchComments = async (productId: number) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/comments?productId=${productId}`)
+            if (res.ok) {
+                const data = await res.json()
+                setComments(data)
+            }
+        } catch (error) {
+            console.error("Yorumlar yüklenirken hata:", error)
+        }
+    }
+
+    const handleDeleteComment = async (commentId: number) => {
+        if (!confirm("Bu yorumu silmek istediğinize emin misiniz?")) return
+        
+        try {
+            const res = await fetch(`http://localhost:5000/api/comments/admin/${commentId}`, {
+                method: "DELETE",
+            })
+            if (res.ok) {
+                alert("Yorum başarıyla silindi.")
+                if (urun) {
+                    fetchComments(urun.id)
+                }
+            } else {
+                alert("Yorum silme işlemi başarısız oldu.")
+            }
+        } catch (error) {
+            alert("Sunucuya bağlanırken hata oluştu.")
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -535,6 +784,71 @@ function UrunForm({ kategoriler, urun, onCancel, onSuccess }: UrunFormProps) {
                         placeholder="https://example.com/resim.jpg"
                     />
                 </div>
+
+                {/* Yorumlar Bölümü - Sadece düzenleme modunda göster */}
+                {urun && (
+                    <div className="pt-6 border-t border-gray-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-800">Ürün Yorumları</h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowComments(!showComments)}
+                                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                            >
+                                {showComments ? "Yorumları Gizle" : "Yorumları Göster"}
+                            </button>
+                        </div>
+
+                        {showComments && (
+                            <div className="space-y-4">
+                                {comments.length === 0 ? (
+                                    <p className="text-gray-500 text-center py-4">Bu ürün için henüz yorum yok.</p>
+                                ) : (
+                                    comments.map((comment) => (
+                                        <div key={comment.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="font-semibold text-gray-800">
+                                                            {comment.userName}
+                                                        </span>
+                                                        <div className="flex items-center">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <svg
+                                                                    key={i}
+                                                                    className={`w-4 h-4 ${
+                                                                        i < comment.rating ? "text-yellow-400" : "text-gray-300"
+                                                                    }`}
+                                                                    fill="currentColor"
+                                                                    viewBox="0 0 20 20"
+                                                                >
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                                </svg>
+                                                            ))}
+                                                        </div>
+                                                        <span className="text-sm text-gray-500">
+                                                            {new Date(comment.createdAt).toLocaleDateString('tr-TR')}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-gray-700">{comment.body}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDeleteComment(comment.id)}
+                                                    className="ml-4 text-red-600 hover:text-red-800 transition-colors"
+                                                    title="Yorumu Sil"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Butonlar */}
                 <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">

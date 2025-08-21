@@ -1,4 +1,5 @@
 ﻿using backend.Data;
+using backend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -11,6 +12,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Email servisi ekle
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddCors(options =>
 {
@@ -45,12 +49,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection(); // HTTPS yönlendirmesi geçici olarak kaldırıldı
 
-// CORS middleware Authorization'dan önce olmalı
 app.UseCors("AllowFrontend");
 
-// Authentication ve Authorization middleware'lerini ekle
+
 app.UseAuthentication();
 app.UseAuthorization();
 

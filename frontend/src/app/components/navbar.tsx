@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Heart, ShoppingCart, Search, User, Menu, X, ChevronDown } from "lucide-react"
+import { useCart } from "../lib/cart-context"
 
 const menuItems = [
     {
@@ -73,6 +74,7 @@ export default function Navbar() {
     const [openIndex, setOpenIndex] = useState<number | null>(null)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const router = useRouter()
+    const { getCartItemCount, getFavoriteCount } = useCart()
 
     const [searchTerm, setSearchTerm] = useState("")
     const [results, setResults] = useState<any[]>([])
@@ -173,7 +175,7 @@ export default function Navbar() {
 
     return (
         <nav className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 shadow-2xl sticky top-0 z-50">
-            <div className="w-full pl-[4cm] pr-[1cm]">
+            <div className="w-full px-4 sm:px-6 lg:px-8">
 
                 {/* satır: mobile wrap, desktop sabit yükseklik */}
                 <div className="flex flex-wrap md:flex-nowrap justify-between items-center md:h-20 py-3 gap-3">
@@ -181,7 +183,7 @@ export default function Navbar() {
                     <div className="flex-shrink-0">
                         <Link
                             href="/"
-                            className="text-3xl font-bold text-white hover:text-yellow-300 transition-colors duration-300"
+                            className="text-2xl sm:text-3xl font-bold text-white hover:text-yellow-300 transition-colors duration-300"
                         >
                             TechStore
                         </Link>
@@ -236,11 +238,11 @@ export default function Navbar() {
                     {/* Search: büyük & responsive */}
                     <div ref={searchRef} className="order-3 md:order-none relative w-full md:w-auto md:flex-1 md:max-w-3xl xl:max-w-4xl">
                         <div className="relative">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-500" />
+                            <Search className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
                             <input
                                 type="text"
                                 placeholder="Ürün ara..."
-                                className="w-full h-12 md:h-12 pl-14 pr-6 rounded-full bg-white/90 backdrop-blur-sm focus:bg-white focus:ring-2 focus:ring-yellow-400 focus:outline-none transition-all duration-300 text-base text-gray-800 placeholder-gray-500 shadow-lg"
+                                className="w-full h-10 sm:h-12 pl-10 sm:pl-14 pr-4 sm:pr-6 rounded-full bg-white/90 backdrop-blur-sm focus:bg-white focus:ring-2 focus:ring-yellow-400 focus:outline-none transition-all duration-300 text-sm sm:text-base text-gray-800 placeholder-gray-500 shadow-lg"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -295,35 +297,35 @@ export default function Navbar() {
                     </div>
 
                     {/* Sağ ikonlar */}
-                    <div className="flex items-center space-x-4 ml-auto">
-                        <button className="p-3 text-white hover:text-red-300 hover:bg-white/10 rounded-xl transition-all duration-300 relative group backdrop-blur-sm">
-                            <Heart className="h-6 w-6" />
-                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">
-                                0
+                    <div className="flex items-center space-x-2 sm:space-x-4 ml-auto">
+                        <Link href="/favorites" className="p-2 sm:p-3 text-white hover:text-red-300 hover:bg-white/10 rounded-xl transition-all duration-300 relative group backdrop-blur-sm">
+                            <Heart className="h-5 w-5 sm:h-6 sm:w-6" />
+                            <span className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-bold shadow-lg">
+                                {getFavoriteCount()}
                             </span>
-                        </button>
+                        </Link>
 
-                        <button className="p-3 text-white hover:text-green-300 hover:bg-white/10 rounded-xl transition-all duration-300 relative group backdrop-blur-sm">
-                            <ShoppingCart className="h-6 w-6" />
-                            <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">
-                                0
+                        <Link href="/cart" className="p-2 sm:p-3 text-white hover:text-green-300 hover:bg-white/10 rounded-xl transition-all duration-300 relative group backdrop-blur-sm">
+                            <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
+                            <span className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-green-500 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-bold shadow-lg">
+                                {getCartItemCount()}
                             </span>
-                        </button>
+                        </Link>
 
                         {/* User */}
                         {user ? (
                             <div className="relative" ref={userMenuRef}>
                                 <button
                                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                    className="flex items-center space-x-2 p-3 text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm"
+                                    className="flex items-center space-x-2 p-2 sm:p-3 text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm"
                                 >
-                                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                                        <User className="h-5 w-5 text-white" />
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                                        <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                                     </div>
-                                    <span className="text-sm font-medium hidden sm:block text-white whitespace-nowrap text-center">
+                                    <span className="text-xs sm:text-sm font-medium hidden sm:block text-white whitespace-nowrap text-center">
                                         {user.name}
                                     </span>
-                                    <ChevronDown className="h-4 w-4 text-white" />
+                                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                                 </button>
 
                                 {userMenuOpen && (
@@ -334,18 +336,7 @@ export default function Navbar() {
                                             </p>
                                             <p className="text-xs text-purple-600 font-medium text-center">Müşteri</p>
                                         </div>
-                                        <Link
-                                            href="/profile"
-                                            className="block px-4 py-3 text-sm text-gray-700 text-center hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
-                                        >
-                                            👤 Profil
-                                        </Link>
-                                        <Link
-                                            href="/orders"
-                                            className="block px-4 py-3 text-sm text-gray-700 text-center hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
-                                        >
-                                            📦 Siparişlerim
-                                        </Link>
+
                                         <Link
                                             href="/settings"
                                             className="block px-4 py-3 text-sm text-gray-700 text-center hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
@@ -372,12 +363,12 @@ export default function Navbar() {
                         ) : (
                             <Link
                                 href="/login"
-                                className="flex items-center space-x-2 p-3 text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm"
+                                className="flex items-center space-x-2 p-2 sm:p-3 text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm"
                             >
-                                <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                                    <User className="h-5 w-5 text-white" />
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                                 </div>
-                                <span className="text-sm font-medium hidden sm:block text-white whitespace-nowrap text-center">
+                                <span className="text-xs sm:text-sm font-medium hidden sm:block text-white whitespace-nowrap text-center">
                                     Giriş Yap
                                 </span>
                             </Link>
@@ -386,9 +377,9 @@ export default function Navbar() {
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="md:hidden p-3 text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm"
+                            className="md:hidden p-2 sm:p-3 text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm"
                         >
-                            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                            {mobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
                         </button>
                     </div>
 

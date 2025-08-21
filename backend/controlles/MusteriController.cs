@@ -107,26 +107,140 @@ namespace backend.Controllers
         }
 
         // LOGIN için POST api/musteri/login
-        public class LoginRequest
+            public class LoginRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public class RegisterRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string? Telephone { get; set; }
+    }
+
+        // POST: api/musteri/register
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest registerRequest)
         {
-            public string Email { get; set; } = string.Empty;
-            public string Password { get; set; } = string.Empty;
+            try
+            {
+                // Input validation
+                if (string.IsNullOrWhiteSpace(registerRequest.Email) || 
+                    string.IsNullOrWhiteSpace(registerRequest.Password) ||
+                    string.IsNullOrWhiteSpace(registerRequest.FullName))
+                {
+                    _logger.LogWarning("Register attempt with empty required fields");
+                    return BadRequest("Email, şifre ve ad soyad gereklidir.");
+                }
+
+                // Email format kontrolü
+                if (!registerRequest.Email.Contains("@"))
+                {
+                    return BadRequest("Geçerli bir email adresi giriniz.");
+                }
+
+                // Email zaten var mı kontrol et
+                var existingMusteri = await _context.Musteriler
+                    .FirstOrDefaultAsync(m => m.Email.ToLower() == registerRequest.Email.ToLower());
+
+                if (existingMusteri != null)
+                {
+                    _logger.LogWarning($"Email already exists: {registerRequest.Email}");
+                    return BadRequest("Bu email adresi zaten kullanılıyor.");
+                }
+
+                // Ad ve soyadı ayır
+                var nameParts = registerRequest.FullName.Split(' ', 2);
+                var ad = nameParts[0];
+                var soyad = nameParts.Length > 1 ? nameParts[1] : "";
+
+                // Yeni müşteri oluştur
+                var yeniMusteri = new Musteri
+                {
+                    Email = registerRequest.Email.ToLower(),
+                    Password = registerRequest.Password,
+                    Ad = ad,
+                    Soyad = soyad,
+                    Telefon = registerRequest.Telephone ?? ""
+                };
+
+                await _context.Musteriler.AddAsync(yeniMusteri);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Yeni müşteri kaydı: {yeniMusteri.Email}");
+
+                // Güvenlik için şifreyi çıktıdan kaldır
+                var responseMusteri = new
+                {
+                    Id = yeniMusteri.Id,
+                    Email = yeniMusteri.Email,
+                    Ad = yeniMusteri.Ad,
+                    Soyad = yeniMusteri.Soyad,
+                    Telefon = yeniMusteri.Telefon
+                };
+
+                return Ok(responseMusteri);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Register error occurred");
+                return StatusCode(500, "Bir hata oluştu. Lütfen tekrar deneyin.");
+            }
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
         {
-            var musteri = await _context.Musteriler
-                .FirstOrDefaultAsync(m => m.Email == loginRequest.Email && m.Password == loginRequest.Password);
-
-            if (musteri == null)
+            try
             {
-                _logger.LogWarning($"Giriş başarısız: {loginRequest.Email}");
-                return Unauthorized("Email veya şifre yanlış.");
-            }
+                // Input validation
+                if (string.IsNullOrWhiteSpace(loginRequest.Email) || string.IsNullOrWhiteSpace(loginRequest.Password))
+                {
+                    _logger.LogWarning("Login attempt with empty email or password");
+                    return BadRequest("Email ve şifre gereklidir.");
+                }
 
-            _logger.LogInformation($"Başarılı giriş: {musteri.Email}");
-            return Ok(musteri);
+                _logger.LogInformation($"Login attempt for email: {loginRequest.Email}");
+
+                // Email ile müşteriyi bul
+                var musteri = await _context.Musteriler
+                    .FirstOrDefaultAsync(m => m.Email.ToLower() == loginRequest.Email.ToLower());
+
+                if (musteri == null)
+                {
+                    _logger.LogWarning($"User not found with email: {loginRequest.Email}");
+                    return Unauthorized("Email veya şifre yanlış.");
+                }
+
+                // Şifre kontrolü (case sensitive)
+                if (musteri.Password != loginRequest.Password)
+                {
+                    _logger.LogWarning($"Wrong password for email: {loginRequest.Email}");
+                    return Unauthorized("Email veya şifre yanlış.");
+                }
+
+                _logger.LogInformation($"Başarılı giriş: {musteri.Email}");
+                
+                // Güvenlik için şifreyi çıktıdan kaldır
+                var responseMusteri = new
+                {
+                    Id = musteri.Id,
+                    Email = musteri.Email,
+                    Ad = musteri.Ad,
+                    Soyad = musteri.Soyad,
+                    Telefon = musteri.Telefon
+                };
+
+                return Ok(responseMusteri);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Login error occurred");
+                return StatusCode(500, "Bir hata oluştu. Lütfen tekrar deneyin.");
+            }
         }
     }
 }

@@ -61,13 +61,11 @@ export async function getProductsBySlug(slug: string) {
 
     const query = `
     SELECT * FROM urunler
-    WHERE alt_kategori_id = $1
+    WHERE alt_kategori_id = $1o
   `
     const { rows } = await pool.query(query, [altKategoriId])
     return rows
 }
-
-// Rastgele ürünleri getir (3 adet)
 export async function getRandomDiscountedProducts(limit: number = 3) {
     const query = `
         SELECT * FROM urunler

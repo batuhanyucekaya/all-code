@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react"
 import { use } from "react"
 import { FaHeart, FaShoppingCart, FaStar, FaUser, FaCalendar, FaThumbsUp } from "react-icons/fa"
-import { Heart, ShoppingCart, Star, User, Calendar, MessageSquare, Send, Minus, Plus } from "lucide-react"
+import { Heart, ShoppingCart, Star, User, Calendar, MessageSquare, Send, Minus, Plus, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useCart } from "../../lib/cart-context"
 
 type Comment = {
     id: number
@@ -27,6 +29,8 @@ type Product = {
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params)
+    const router = useRouter()
+    const { addToCart, addToFavorites, removeFromFavorites, isInFavorites } = useCart()
     const [urun, setUrun] = useState<Product | null>(null)
     const [comments, setComments] = useState<Comment[]>([])
     const [newComment, setNewComment] = useState("")
@@ -38,7 +42,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     useEffect(() => {
         fetchProduct()
         fetchComments()
-        
+
         // Debug: Authentication durumunu kontrol et
         const userData = localStorage.getItem("user")
         console.log("User data:", userData)
@@ -98,9 +102,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 headers: {
                     "Content-Type": "application/json",
                 },
-                credentials: "include", // Cookie'leri dahil et
                 body: JSON.stringify({
                     productId: urun.id,
+                    userId: JSON.parse(userData).id,
                     rating: rating,
                     body: newComment,
                 }),
@@ -109,22 +113,20 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             if (response.ok) {
                 setNewComment("")
                 setRating(5)
-                fetchComments()
+                fetchComments() // Yorumları yenile
             } else {
-                const errorText = await response.text()
-                console.error("Yorum ekleme hatası:", errorText)
-                if (response.status === 401) {
-                    alert("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.")
-                } else {
-                    alert("Yorum eklenirken bir hata oluştu: " + errorText)
-                }
+                alert("Yorum eklenirken bir hata oluştu!")
             }
         } catch (error) {
-            console.error("Yorum eklenirken hata:", error)
-            alert("Bağlantı hatası! Lütfen tekrar deneyin.")
+            console.error("Yorum ekleme hatası:", error)
+            alert("Yorum eklenirken bir hata oluştu!")
         } finally {
             setIsSubmitting(false)
         }
+    }
+
+    const handleGoBack = () => {
+        router.back()
     }
 
     const getAverageRating = () => {
@@ -147,118 +149,155 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         }
     }
 
+    const handleAddToCart = () => {
+        if (urun) {
+            addToCart(urun, quantity)
+
+            // Başarı mesajı göster
+            const button = document.querySelector('[data-cart-button]') as HTMLButtonElement
+            if (button) {
+                const originalText = button.innerHTML
+                button.innerHTML = '<span class="text-green-300">✓ Sepete Eklendi!</span>'
+                button.classList.add('bg-green-600')
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700')
+
+                setTimeout(() => {
+                    button.innerHTML = originalText
+                    button.classList.remove('bg-green-600')
+                    button.classList.add('bg-blue-600', 'hover:bg-blue-700')
+                }, 2000)
+            }
+        }
+    }
+
+    const handleToggleFavorite = () => {
+        if (urun) {
+            if (isInFavorites(urun.id)) {
+                removeFromFavorites(urun.id)
+            } else {
+                addToFavorites(urun)
+            }
+        }
+    }
+
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Ürün yükleniyor...</p>
+                </div>
             </div>
         )
     }
 
     if (!urun) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-700 mb-4">Ürün Bulunamadı</h1>
-                    <p className="text-gray-500">Aradığınız ürün mevcut değil.</p>
+                    <p className="text-red-600 text-lg">Ürün bulunamadı</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-            <div className="max-w-5xl mx-auto px-4">
-                {/* Ürün Detay Kartı */}
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-                        {/* Ürün Resmi - Daha Küçük */}
-                        <div className="lg:col-span-1">
-                            <div className="relative group">
-                                <div className="aspect-square rounded-xl overflow-hidden bg-gray-100 max-w-sm mx-auto">
-                                    <img
-                                        src={urun.resim_url}
-                                        alt={urun.isim}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                </div>
-                                <button className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-                                    <Heart className="w-5 h-5 text-red-500" />
+        <div className="min-h-screen bg-gray-50 py-4 sm:py-6 md:py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Geri Tuşu */}
+                <div className="mb-4 sm:mb-6">
+                    <button
+                        onClick={handleGoBack}
+                        className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors touch-manipulation"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                        <span className="text-sm sm:text-base font-medium">Geri Dön</span>
+                    </button>
+                </div>
+
+                {/* Ürün Detayları */}
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                        {/* Ürün Resmi */}
+                        <div className="p-4 sm:p-6">
+                            <div className="relative">
+                                <img
+                                    src={urun.resim_url}
+                                    alt={urun.isim}
+                                    className="w-full h-64 sm:h-80 md:h-96 object-contain bg-gray-50 rounded-lg"
+                                />
+                                <button
+                                    onClick={handleToggleFavorite}
+                                    className={`absolute top-2 right-2 p-2 backdrop-blur-sm rounded-full transition-all duration-200 shadow-lg touch-manipulation ${urun && isInFavorites(urun.id)
+                                            ? 'bg-red-500 text-white'
+                                            : 'bg-white/80 hover:bg-red-500 hover:text-white'
+                                        }`}
+                                >
+                                    <Heart className="h-5 w-5" />
                                 </button>
                             </div>
                         </div>
 
-                        {/* Ürün Bilgileri - Daha Geniş */}
-                        <div className="lg:col-span-2 space-y-6">
-                            <div>
-                                <h1 className="text-3xl font-bold text-gray-900 mb-2">{urun.isim}</h1>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star
-                                                key={i}
-                                                className={`w-5 h-5 ${i < Math.floor(parseFloat(getAverageRating()))
-                                                    ? "text-yellow-400 fill-current"
-                                                    : "text-gray-300"
-                                                    }`}
-                                            />
-                                        ))}
-                                    </div>
-                                    <span className="text-sm text-gray-600">
-                                        ({getAverageRating()}) {Array.isArray(comments) ? comments.length : 0} yorum
+                        {/* Ürün Bilgileri */}
+                        <div className="p-4 sm:p-6 lg:p-8">
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{urun.isim}</h1>
+
+                            <p className="text-sm sm:text-base text-gray-600 mb-6 leading-relaxed">
+                                {urun.aciklama}
+                            </p>
+
+                            {/* Fiyat */}
+                            <div className="mb-6">
+                                <div className="flex items-center space-x-3 mb-2">
+                                    <span className="text-2xl sm:text-3xl font-bold text-gray-900">{urun.fiyat} ₺</span>
+                                    <span className="text-lg text-gray-500 line-through">{(urun.fiyat * 1.33).toFixed(0)} ₺</span>
+                                    <span className="bg-red-100 text-red-600 px-2 py-1 rounded-full text-sm font-semibold">
+                                        %25 İndirim
                                     </span>
                                 </div>
+                                <p className="text-sm text-green-600 font-medium">Stok: {urun.stok} adet</p>
                             </div>
 
-                            <div className="text-3xl font-bold text-green-600">
-                                ₺{(urun.fiyat || 0).toLocaleString()}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${urun.stok > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                <span className={`text-sm font-medium ${urun.stok > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {urun.stok > 0 ? `${urun.stok} adet stokta` : 'Stokta yok'}
-                                </span>
-                            </div>
-
-                            <p className="text-gray-600 leading-relaxed">{urun.aciklama}</p>
-
-                            {/* Miktar Seçici */}
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-700">Miktar:</span>
-                                    <div className="flex items-center border border-gray-300 rounded-lg">
-                                        <button
-                                            onClick={() => handleQuantityChange(quantity - 1)}
-                                            disabled={quantity <= 1}
-                                            className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            <Minus className="w-4 h-4" />
-                                        </button>
-                                        <span className="px-4 py-2 text-center min-w-[60px] font-medium">
-                                            {quantity}
-                                        </span>
-                                        <button
-                                            onClick={() => handleQuantityChange(quantity + 1)}
-                                            disabled={quantity >= urun.stok}
-                                            className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="text-lg font-semibold text-gray-900">
-                                    Toplam: ₺{((urun.fiyat || 0) * quantity).toLocaleString()}
+                            {/* Miktar Seçimi */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Miktar</label>
+                                <div className="flex items-center space-x-3">
+                                    <button
+                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                        className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors touch-manipulation"
+                                    >
+                                        <Minus className="h-4 w-4" />
+                                    </button>
+                                    <span className="text-lg font-semibold min-w-[3rem] text-center">{quantity}</span>
+                                    <button
+                                        onClick={() => setQuantity(quantity + 1)}
+                                        className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors touch-manipulation"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                    <ShoppingCart className="w-5 h-5" />
-                                    Sepete Ekle ({quantity})
+                            {/* Aksiyon Butonları */}
+                            <div className="space-y-3 sm:space-y-4">
+                                <button
+                                    data-cart-button
+                                    onClick={handleAddToCart}
+                                    className="w-full bg-blue-600 text-white py-3 sm:py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 font-semibold text-base sm:text-lg touch-manipulation"
+                                >
+                                    <ShoppingCart className="h-5 w-5" />
+                                    <span>Sepete Ekle</span>
                                 </button>
-                                <button className="px-6 py-3 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold rounded-xl transition-colors">
-                                    Favorilere Ekle
+
+                                <button
+                                    onClick={handleToggleFavorite}
+                                    className={`w-full py-3 sm:py-4 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 font-semibold text-base sm:text-lg touch-manipulation ${urun && isInFavorites(urun.id)
+                                            ? 'bg-red-500 text-white hover:bg-red-600'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    <Heart className="h-5 w-5" />
+                                    <span>{urun && isInFavorites(urun.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}</span>
                                 </button>
                             </div>
                         </div>
@@ -266,122 +305,98 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 </div>
 
                 {/* Yorumlar Bölümü */}
-                <div className="bg-white rounded-2xl shadow-xl p-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Yorumlar ve Değerlendirmeler</h2>
+                <div className="mt-8 sm:mt-12">
+                    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Yorumlar ({comments.length})</h2>
 
-                    {/* Yorum Formu */}
-                    <div className="bg-gray-50 rounded-xl p-6 mb-8">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Yorum Yap</h3>
-                        
-                        {/* Kullanıcı durumu kontrolü */}
-                        {(() => {
-                            const userData = localStorage.getItem("user")
-                            if (!userData) {
-                                return (
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                                        <p className="text-yellow-800">
-                                            Yorum yapmak için lütfen{" "}
-                                            <a href="/login" className="text-blue-600 hover:underline font-medium">
-                                                giriş yapın
-                                            </a>
-                                        </p>
+                        {/* Yorum Formu */}
+                        <form onSubmit={handleSubmitComment} className="mb-8">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Değerlendirme</label>
+                                    <div className="flex items-center space-x-1">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => setRating(star)}
+                                                className="p-1 touch-manipulation"
+                                            >
+                                                <Star
+                                                    className={`h-6 w-6 ${star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                                        }`}
+                                                />
+                                            </button>
+                                        ))}
                                     </div>
-                                )
-                            }
-                            return null
-                        })()}
-                        
-                        <form onSubmit={handleSubmitComment} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Puanınız
-                                </label>
-                                <div className="flex gap-1">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <button
-                                            key={star}
-                                            type="button"
-                                            onClick={() => setRating(star)}
-                                            className="p-1 hover:scale-110 transition-transform"
-                                        >
-                                            <Star
-                                                className={`w-6 h-6 ${star <= rating
-                                                    ? "text-yellow-400 fill-current"
-                                                    : "text-gray-300"
-                                                    }`}
-                                            />
-                                        </button>
-                                    ))}
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Yorumunuz
-                                </label>
-                                <textarea
-                                    value={newComment}
-                                    onChange={(e) => setNewComment(e.target.value)}
-                                    placeholder="Bu ürün hakkında düşüncelerinizi paylaşın..."
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                    rows={4}
-                                    required
-                                />
-                            </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Yorumunuz</label>
+                                    <textarea
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
+                                        rows={4}
+                                        placeholder="Ürün hakkında düşüncelerinizi paylaşın..."
+                                        required
+                                    />
+                                </div>
 
-                            <button
-                                type="submit"
-                                disabled={isSubmitting || !newComment.trim() || !localStorage.getItem("user")}
-                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center gap-2"
-                            >
-                                <Send className="w-4 h-4" />
-                                {isSubmitting ? "Gönderiliyor..." : "Yorumu Gönder"}
-                            </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="bg-blue-600 text-white py-2 sm:py-3 px-4 sm:px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm sm:text-base touch-manipulation"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            <span>Gönderiliyor...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="h-4 w-4" />
+                                            <span>Yorum Gönder</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </form>
-                    </div>
 
-                    {/* Yorumlar Listesi */}
-                    <div className="space-y-6">
-                        {!Array.isArray(comments) || comments.length === 0 ? (
-                            <div className="text-center py-8">
-                                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-500">Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
-                            </div>
-                        ) : (
-                            comments.map((comment) => (
-                                <div key={comment.id} className="border-b border-gray-200 pb-6 last:border-b-0">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                <User className="w-5 h-5 text-blue-600" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-gray-900">
-                                                    Kullanıcı {comment.userId || "Anonim"}
-                                                </p>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex items-center">
-                                                        {[...Array(5)].map((_, i) => (
+                        {/* Yorumlar Listesi */}
+                        <div className="space-y-4 sm:space-y-6">
+                            {comments.length === 0 ? (
+                                <p className="text-gray-500 text-center py-8">Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
+                            ) : (
+                                comments.map((comment) => (
+                                    <div key={comment.id} className="border border-gray-200 rounded-lg p-4 sm:p-6">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-gray-900">Kullanıcı</p>
+                                                    <div className="flex items-center space-x-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
                                                             <Star
-                                                                key={i}
-                                                                className={`w-4 h-4 ${i < comment.rating
-                                                                    ? "text-yellow-400 fill-current"
-                                                                    : "text-gray-300"
+                                                                key={star}
+                                                                className={`h-3 w-3 sm:h-4 sm:w-4 ${star <= comment.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
                                                                     }`}
                                                             />
                                                         ))}
                                                     </div>
-                                                    <span className="text-sm text-gray-500">
-                                                        {formatDate(comment.createdAt)}
-                                                    </span>
                                                 </div>
                                             </div>
+                                            <span className="text-xs sm:text-sm text-gray-500">
+                                                {new Date(comment.createdAt).toLocaleDateString('tr-TR')}
+                                            </span>
                                         </div>
+                                        <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{comment.body}</p>
                                     </div>
-                                    <p className="text-gray-700 leading-relaxed">{comment.body}</p>
-                                </div>
-                            ))
-                        )}
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

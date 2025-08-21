@@ -4,7 +4,7 @@ import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, User, Mail, Lock, Phone, ArrowRight, CheckCircle, AlertCircle } from "lucide-react"
 
-const API_URL = "http://localhost:5000/api/auth"
+const API_URL = "http://localhost:5000/api/musteri"
 
 export default function AuthCard() {
     const router = useRouter()
@@ -50,15 +50,19 @@ export default function AuthCard() {
             })
 
             if (res.ok) {
-                const userName = fullName
+                const data = await res.json()
+                console.log('Register response:', data)
+                
+                const userName = `${data.ad} ${data.soyad}`.trim() || fullName
                 setLoggedUserName(userName)
                 setMessage("🎉 Kayıt başarılı! Giriş yapılıyor...")
                 setMessageType('success')
                 
                 // Kullanıcı bilgilerini localStorage'a kaydet
                 localStorage.setItem('user', JSON.stringify({
+                    id: data.id,
                     name: userName,
-                    email: email
+                    email: data.email || email
                 }))
 
                 // Navbar'ı güncellemek için event gönder
@@ -118,14 +122,14 @@ export default function AuthCard() {
                 const data = await res.json()
                 console.log('Login response:', data)
                 
-                const userName = data.fullName || "Kullanıcı"
+                const userName = `${data.ad} ${data.soyad}`.trim() || "Kullanıcı"
                 setLoggedUserName(userName)
                 setMessage(`🎉 Giriş başarılı! Hoşgeldin, ${userName}`)
                 setMessageType('success')
 
                 // Kullanıcı bilgilerini localStorage'a kaydet
                 localStorage.setItem('user', JSON.stringify({
-                    id: data.userId,
+                    id: data.id,
                     name: userName,
                     email: data.email || email
                 }))
@@ -220,6 +224,17 @@ export default function AuthCard() {
                                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             </div>
+                            {/* Şifremi Unuttum Linki - Sadece giriş modunda göster */}
+                            {isLogin && (
+                                <div className="text-right">
+                                    <a
+                                        href="/forgot-password"
+                                        className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                                    >
+                                        Şifremi unuttum
+                                    </a>
+                                </div>
+                            )}
                         </div>
 
                         {/* Kayıt formu için ek alanlar */}

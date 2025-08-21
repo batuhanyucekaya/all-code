@@ -424,3 +424,6 @@ C:\Users\batuh\all-code\backend\obj\Debug\net8.0\refint\backend.dll
 C:\Users\batuh\all-code\backend\obj\Debug\net8.0\backend.pdb
 C:\Users\batuh\all-code\backend\obj\Debug\net8.0\backend.genruntimeconfig.cache
 C:\Users\batuh\all-code\backend\obj\Debug\net8.0\ref\backend.dll
+C:\Users\batuh\all-code\backend\bin\Debug\net8.0\BouncyCastle.Cryptography.dll
+C:\Users\batuh\all-code\backend\bin\Debug\net8.0\MailKit.dll
+C:\Users\batuh\all-code\backend\bin\Debug\net8.0\MimeKit.dll

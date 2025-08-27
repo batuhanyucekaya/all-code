@@ -1,0 +1,258 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>@ViewData["Title"] - TechStore</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css?v=@DateTime.Now.Ticks&t=@DateTime.Now.ToString("HHmmss")" />
+    <link rel="stylesheet" href="~/backend.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <nav class="navbar navbar-expand-lg">
+                <div class="container-fluid">
+                    <!-- Logo -->
+                    <div class="navbar-brand-container">
+                        <a class="navbar-brand" asp-area="" asp-page="/Index">
+                            TechStore
+                        </a>
+                    </div>
+
+                    <!-- Desktop Menu -->
+                    <div class="navbar-collapse collapse show desktop-menu">
+                        <ul class="navbar-nav me-auto">
+                            <!-- PC Hardware -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    PC Hardware
+                                    <i class="fas fa-chevron-down ms-1"></i>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <div class="dropdown-header">
+                                        <h3>PC Hardware</h3>
+                                    </div>
+                                    <li><a class="dropdown-item" href="/storage">Storage</a></li>
+                                    <li><a class="dropdown-item" href="/software">Software</a></li>
+                                    <li><a class="dropdown-item" href="/accessories">Accessories</a></li>
+                                    <li><a class="dropdown-item" href="/network">Network</a></li>
+                                    <li><a class="dropdown-item" href="/office-products">Office Products</a></li>
+                                    <li><a class="dropdown-item" href="/monitors">Monitors</a></li>
+                                    <li><a class="dropdown-item" href="/gaming-monitors">Gaming Monitors</a></li>
+                                </ul>
+                            </li>
+
+                            <!-- Headphones -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Headphones
+                                    <i class="fas fa-chevron-down ms-1"></i>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <div class="dropdown-header">
+                                        <h3>Headphones</h3>
+                                    </div>
+                                    <li><a class="dropdown-item" href="/bluetooth-headphones">Bluetooth Headphones</a></li>
+                                    <li><a class="dropdown-item" href="/gaming-headset">Gaming Headset</a></li>
+                                    <li><a class="dropdown-item" href="/wired-headphones">Wired Headphones</a></li>
+                                    <li><a class="dropdown-item" href="/in-ear-headphones">In-Ear Headphones</a></li>
+                                    <li><a class="dropdown-item" href="/over-ear-headphones">Over-Ear Headphones</a></li>
+                                </ul>
+                            </li>
+
+                            <!-- Phones & Accessories -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Phones & Accessories
+                                    <i class="fas fa-chevron-down ms-1"></i>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <div class="dropdown-header">
+                                        <h3>Phones & Accessories</h3>
+                                    </div>
+                                    <li><a class="dropdown-item" href="/android-phones">Android Phones</a></li>
+                                    <li><a class="dropdown-item" href="/ios-phones">iOS Phones</a></li>
+                                    <li><a class="dropdown-item" href="/ai-phones">AI Phones</a></li>
+                                    <li><a class="dropdown-item" href="/cases">Cases</a></li>
+                                    <li><a class="dropdown-item" href="/chargers">Chargers</a></li>
+                                    <li><a class="dropdown-item" href="/screen-protectors">Screen Protectors</a></li>
+                                    <li><a class="dropdown-item" href="/charging-cables">Charging Cables</a></li>
+                                    <li><a class="dropdown-item" href="/phone-holders">Phone Holders</a></li>
+                                </ul>
+                            </li>
+
+                            <!-- Computers & Accessories -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Computers & Accessories
+                                    <i class="fas fa-chevron-down ms-1"></i>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <div class="dropdown-header">
+                                        <h3>Computers & Accessories</h3>
+                                    </div>
+                                    <li><a class="dropdown-item" href="/desktop-pcs">Desktop PCs</a></li>
+                                    <li><a class="dropdown-item" href="/laptops">Laptops</a></li>
+                                    <li><a class="dropdown-item" href="/mac">Mac</a></li>
+                                    <li><a class="dropdown-item" href="/gaming-laptops">Gaming Laptops</a></li>
+                                    <li><a class="dropdown-item" href="/gaming-desktops">Gaming Desktops</a></li>
+                                    <li><a class="dropdown-item" href="/gaming-mouse">Gaming Mouse</a></li>
+                                    <li><a class="dropdown-item" href="/gaming-keyboard">Gaming Keyboard</a></li>
+                                    <li><a class="dropdown-item" href="/gaming-headset">Gaming Headset</a></li>
+                                    <li><a class="dropdown-item" href="/gaming-accessories">Gaming Accessories</a></li>
+                                </ul>
+                            </li>
+
+                            <!-- TV, Sound & Monitor -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    TV, Sound & Monitor
+                                    <i class="fas fa-chevron-down ms-1"></i>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <div class="dropdown-header">
+                                        <h3>TV, Sound & Monitor</h3>
+                                    </div>
+                                    <li><a class="dropdown-item" href="/tvs">TVs</a></li>
+                                    <li><a class="dropdown-item" href="/monitors">Monitors</a></li>
+                                    <li><a class="dropdown-item" href="/speakers">Speakers</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="form-control search-input" placeholder="Ürün ara..." id="searchInput" />
+                            <div class="search-results" id="searchResults"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Icons -->
+                    <div class="right-icons">
+                        <!-- Favorites -->
+                        <a href="/favorites" class="icon-button favorites-btn">
+                            <i class="fas fa-heart"></i>
+                            <span class="badge" id="favoritesCount">0</span>
+                        </a>
+
+                        <!-- Cart -->
+                        <a href="/cart" class="icon-button cart-btn">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="badge" id="cartCount">0</span>
+                        </a>
+
+                        <!-- User -->
+                        <div class="user-account" id="userAccount">
+                            <div class="user-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="user-text">Giriş Yap</span>
+                        </div>
+
+                        <!-- Mobile Menu Button -->
+                        <button class="navbar-toggler mobile-menu-btn" type="button" data-bs-toggle="collapse" data-bs-target=".mobile-menu" aria-controls="mobileMenu"
+                                aria-expanded="false" aria-label="Toggle navigation">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu -->
+                <div class="mobile-menu collapse">
+                    <div class="mobile-menu-content">
+                        <!-- PC Hardware -->
+                        <div class="mobile-menu-section">
+                            <div class="mobile-menu-header">PC Hardware</div>
+                            <div class="mobile-menu-items">
+                                <a href="/storage" class="mobile-menu-item">Storage</a>
+                                <a href="/software" class="mobile-menu-item">Software</a>
+                                <a href="/accessories" class="mobile-menu-item">Accessories</a>
+                                <a href="/network" class="mobile-menu-item">Network</a>
+                                <a href="/office-products" class="mobile-menu-item">Office Products</a>
+                                <a href="/monitors" class="mobile-menu-item">Monitors</a>
+                                <a href="/gaming-monitors" class="mobile-menu-item">Gaming Monitors</a>
+                            </div>
+                        </div>
+
+                        <!-- Headphones -->
+                        <div class="mobile-menu-section">
+                            <div class="mobile-menu-header">Headphones</div>
+                            <div class="mobile-menu-items">
+                                <a href="/bluetooth-headphones" class="mobile-menu-item">Bluetooth Headphones</a>
+                                <a href="/gaming-headset" class="mobile-menu-item">Gaming Headset</a>
+                                <a href="/wired-headphones" class="mobile-menu-item">Wired Headphones</a>
+                                <a href="/in-ear-headphones" class="mobile-menu-item">In-Ear Headphones</a>
+                                <a href="/over-ear-headphones" class="mobile-menu-item">Over-Ear Headphones</a>
+                            </div>
+                        </div>
+
+                        <!-- Phones & Accessories -->
+                        <div class="mobile-menu-section">
+                            <div class="mobile-menu-header">Phones & Accessories</div>
+                            <div class="mobile-menu-items">
+                                <a href="/android-phones" class="mobile-menu-item">Android Phones</a>
+                                <a href="/ios-phones" class="mobile-menu-item">iOS Phones</a>
+                                <a href="/ai-phones" class="mobile-menu-item">AI Phones</a>
+                                <a href="/cases" class="mobile-menu-item">Cases</a>
+                                <a href="/chargers" class="mobile-menu-item">Chargers</a>
+                                <a href="/screen-protectors" class="mobile-menu-item">Screen Protectors</a>
+                                <a href="/charging-cables" class="mobile-menu-item">Charging Cables</a>
+                                <a href="/phone-holders" class="mobile-menu-item">Phone Holders</a>
+                            </div>
+                        </div>
+
+                        <!-- Computers & Accessories -->
+                        <div class="mobile-menu-section">
+                            <div class="mobile-menu-header">Computers & Accessories</div>
+                            <div class="mobile-menu-items">
+                                <a href="/desktop-pcs" class="mobile-menu-item">Desktop PCs</a>
+                                <a href="/laptops" class="mobile-menu-item">Laptops</a>
+                                <a href="/mac" class="mobile-menu-item">Mac</a>
+                                <a href="/gaming-laptops" class="mobile-menu-item">Gaming Laptops</a>
+                                <a href="/gaming-desktops" class="mobile-menu-item">Gaming Desktops</a>
+                                <a href="/gaming-mouse" class="mobile-menu-item">Gaming Mouse</a>
+                                <a href="/gaming-keyboard" class="mobile-menu-item">Gaming Keyboard</a>
+                                <a href="/gaming-headset" class="mobile-menu-item">Gaming Headset</a>
+                                <a href="/gaming-accessories" class="mobile-menu-item">Gaming Accessories</a>
+                            </div>
+                        </div>
+
+                        <!-- TV, Sound & Monitor -->
+                        <div class="mobile-menu-section">
+                            <div class="mobile-menu-header">TV, Sound & Monitor</div>
+                            <div class="mobile-menu-items">
+                                <a href="/tvs" class="mobile-menu-item">TVs</a>
+                                <a href="/monitors" class="mobile-menu-item">Monitors</a>
+                                <a href="/speakers" class="mobile-menu-item">Speakers</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </header>
+        
+        <main class="app-main">
+            <div class="container-fluid">
+                @RenderBody()
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <div class="container-fluid">
+                &copy; 2025 - TechStore - <a asp-area="" asp-page="/Privacy">Privacy</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

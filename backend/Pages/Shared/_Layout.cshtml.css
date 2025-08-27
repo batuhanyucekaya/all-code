@@ -1,0 +1,47 @@
+﻿/* Temel stiller */
+a.navbar-brand {
+  white-space: normal;
+  text-align: center;
+  word-break: break-all;
+}
+
+a {
+  color: #ff0000;
+}
+
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #ff0000 0%, #ff3300 100%);
+  border: none;
+}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background: linear-gradient(135deg, #ff0000 0%, #ff3300 100%);
+  border: none;
+}
+
+.border-top {
+  border-top: 1px solid #e5e5e5;
+}
+
+.border-bottom {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.box-shadow {
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+}
+
+button.accept-policy {
+  font-size: 1rem;
+  line-height: inherit;
+}
+
+/* Footer */
+.footer {
+  position: relative;
+  width: 100%;
+  white-space: nowrap;
+  line-height: 60px;
+}

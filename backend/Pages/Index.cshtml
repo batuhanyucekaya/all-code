@@ -1,0 +1,62 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="content-area">
+    <div class="content-scrollable">
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center mb-4">
+                    <h1 class="display-4 fw-bold text-gradient">TechStore'a Hoş Geldiniz</h1>
+                    <p class="lead text-muted">En yeni teknoloji ürünleri ve aksesuarları</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 product-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Telefonlar & Aksesuarlar</h5>
+                        <p class="card-text">En yeni akıllı telefonlar, kılıflar ve şarj cihazları</p>
+                        <a href="#" class="btn btn-primary">Keşfet</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 product-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-laptop fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Bilgisayarlar & Aksesuarlar</h5>
+                        <p class="card-text">Dizüstü bilgisayarlar, masaüstü sistemler ve çevre birimleri</p>
+                        <a href="#" class="btn btn-primary">Keşfet</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 product-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-headphones fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Ses & Görüntü</h5>
+                        <p class="card-text">Kulaklıklar, hoparlörler ve görüntü ekipmanları</p>
+                        <a href="#" class="btn btn-primary">Keşfet</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Özel Teklif!</strong> Yeni üyeler için %10 indirim. Hemen üye olun!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

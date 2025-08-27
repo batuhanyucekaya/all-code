@@ -8,6 +8,7 @@ namespace backend.Services
     public interface IEmailService
     {
         Task SendPasswordResetEmailAsync(string email, string resetLink, string userName);
+        Task SendEmailAsync(string to, string subject, string body, bool isHtml = false);
     }
 
     public class EmailService : IEmailService
@@ -113,6 +114,52 @@ namespace backend.Services
                     </div>
                 </body>
                 </html>";
+        }
+
+        public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = false)
+        {
+            try
+            {
+                var message = new MimeMessage();
+                var fromEmail = _configuration["Email:From"] ?? "stajicredible123@gmail.com";
+                message.From.Add(new MailboxAddress("TechStore", fromEmail));
+                message.To.Add(new MailboxAddress("", to));
+                message.Subject = subject;
+
+                var bodyBuilder = new BodyBuilder();
+                if (isHtml)
+                {
+                    bodyBuilder.HtmlBody = body;
+                }
+                else
+                {
+                    bodyBuilder.TextBody = body;
+                }
+
+                message.Body = bodyBuilder.ToMessageBody();
+
+                using var client = new SmtpClient();
+                await client.ConnectAsync(
+                    _configuration["Email:SmtpServer"] ?? "smtp.gmail.com",
+                    int.Parse(_configuration["Email:Port"] ?? "587"),
+                    SecureSocketOptions.StartTls
+                );
+
+                await client.AuthenticateAsync(
+                    _configuration["Email:Username"] ?? "",
+                    _configuration["Email:Password"] ?? ""
+                );
+
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+
+                _logger.LogInformation($"Email gönderildi: {to}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Email gönderme hatası: {to}");
+                throw;
+            }
         }
     }
 }

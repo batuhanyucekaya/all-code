@@ -1,0 +1,15 @@
+node_modules/ 
+.next/ 
+dist/ 
+build/ 
+.turbo/ 
+coverage/ 
+*.log 
+.env 
+.env.* 
+frontend/node_modules/ 
+backend/node_modules/ 
+frontend/.next/ 
+backend/.next/ 
+backend/bin/ 
+backend/obj/ 

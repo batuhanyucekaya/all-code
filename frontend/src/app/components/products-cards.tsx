@@ -85,10 +85,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="relative overflow-hidden flex-shrink-0">
         <Link href={`/product/${product.id}`} className="block">
           <img
-            src={product.resim_url}
-            alt={product.isim}
+            src={product.resim_url || "/placeholder-product.jpg"}
+            alt={product.isim || "Ürün resmi"}
             className="w-full h-24 sm:h-32 md:h-40 lg:h-48 object-contain bg-gray-50 p-2 sm:p-3 md:p-4 group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = "/placeholder-product.jpg"
+            }}
           />
         </Link>
 

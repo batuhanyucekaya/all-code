@@ -20,7 +20,6 @@ namespace backend.Controllers
             _logger = logger;
         }
 
-        // GET: api/comments?productId=1
         [HttpGet]
         public async Task<IActionResult> GetComments([FromQuery] int productId)
         {
@@ -52,18 +51,15 @@ namespace backend.Controllers
             }
         }
 
-        // POST: api/comments
         [HttpPost]
-        // [Authorize] // Geçici olarak kaldırıldı test için
         public async Task<IActionResult> CreateComment([FromBody] CommentRequest commentRequest)
         {
             try
             {
                 _logger.LogInformation("Yorum ekleme isteği alındı. Request: {@CommentRequest}", commentRequest);
                 
-                // Kullanıcı ID'sini al - JWT token'dan veya request header'dan
                 var userIdClaim = HttpContext.User.FindFirst("UserId");
-                int userId = 5; // Geçici olarak sabit kullanıcı ID'si test için (Batuhan Yucekaya)
+                int userId = 5;
                 if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int authUserId))
                 {
                     userId = authUserId;

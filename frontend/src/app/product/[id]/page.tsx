@@ -225,9 +225,12 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                         <div className="p-4 sm:p-6">
                             <div className="relative">
                                 <img
-                                    src={urun.resim_url}
-                                    alt={urun.isim}
+                                    src={urun.resim_url || "/placeholder-product.jpg"}
+                                    alt={urun.isim || "Ürün resmi"}
                                     className="w-full h-64 sm:h-80 md:h-96 object-contain bg-gray-50 rounded-lg"
+                                    onError={(e) => {
+                                        e.currentTarget.src = "/placeholder-product.jpg"
+                                    }}
                                 />
                                 <button
                                     onClick={handleToggleFavorite}

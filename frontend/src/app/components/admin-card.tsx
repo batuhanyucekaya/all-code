@@ -79,15 +79,7 @@ export default function AdminCard() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        // console.log({
-        //     kategoriId,
-        //     altKategoriId,
-        //     isim,
-        //     aciklama,
-        //     fiyat,
-        //     stok,
-        //     image,
-        // })
+
         toast.success("Form verileri konsola yazdırıldı!")
     }
 

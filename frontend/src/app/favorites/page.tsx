@@ -1,44 +1,38 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { useCart } from "../lib/cart-context"
 import { Heart, Trash2, ArrowLeft, ShoppingCart } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 
 export default function FavoritesPage() {
   const { favoriteItems, removeFromFavorites, addToCart } = useCart()
   const router = useRouter()
+  const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({})
 
   const handleRemoveFromFavorites = async (productId: number) => {
-    await removeFromFavorites(productId)
-    
-    // Başarı mesajı göster
-    const toast = document.createElement('div')
-    toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg shadow-lg z-50 text-sm sm:text-base'
-    toast.textContent = 'Favorilerden kaldırıldı'
-    document.body.appendChild(toast)
-    
-    setTimeout(() => {
-      document.body.removeChild(toast)
-    }, 2000)
+    try {
+      setLoadingStates(prev => ({ ...prev, [productId]: true }))
+      await removeFromFavorites(productId)
+      toast.success("Ürün favorilerden kaldırıldı")
+    } catch (error) {
+      console.error("Favorilerden kaldırma hatası:", error)
+      toast.error("Favorilerden kaldırılırken bir hata oluştu")
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [productId]: false }))
+    }
   }
 
-  const handleAddToCart = async (product: any, event: React.MouseEvent) => {
-    await addToCart(product)
-    
-    // Başarı mesajı göster
-    const button = event.currentTarget as HTMLButtonElement
-    const originalText = button.innerHTML
-    button.innerHTML = '<span class="text-green-300 text-xs sm:text-sm">✓ Eklendi!</span>'
-    button.classList.add('bg-green-600')
-    button.classList.remove('bg-blue-600', 'hover:bg-blue-700')
-    
-    setTimeout(() => {
-      button.innerHTML = originalText
-      button.classList.remove('bg-green-600')
-      button.classList.add('bg-blue-600', 'hover:bg-blue-700')
-    }, 1500)
+  const handleAddToCart = async (product: any) => {
+    try {
+      await addToCart(product)
+      toast.success("Ürün sepete eklendi")
+    } catch (error) {
+      console.error("Sepete ekleme hatası:", error)
+      toast.error("Sepete eklenirken bir hata oluştu")
+    }
   }
 
   if (favoriteItems.length === 0) {
@@ -105,35 +99,41 @@ export default function FavoritesPage() {
                   {/* Product Image */}
                   <div className="flex-shrink-0 flex justify-center sm:justify-start">
                     <img
-                      src={item.resim_url}
+                      src={item.resim_url || "/placeholder-product.jpg"}
                       alt={item.isim}
                       className="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-gray-50 rounded-lg"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = "/placeholder-product.jpg"
+                      }}
                     />
                   </div>
 
                   {/* Product Info */}
                   <div className="flex-1 min-w-0 text-center sm:text-left">
                     <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 truncate mb-1">
-                      {item.isim}
+                      {item.isim || "Ürün Adı Yok"}
                     </h3>
                     <p className="text-sm sm:text-base md:text-lg font-bold text-blue-600">
-                      {item.fiyat} ₺
+                      {item.fiyat ? `${item.fiyat} ₺` : "Fiyat Yok"}
                     </p>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center justify-center sm:justify-start space-x-2">
                     <button
-                      onClick={(e) => handleAddToCart(item, e)}
-                      className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
+                      onClick={() => handleAddToCart(item)}
+                      disabled={loadingStates[item.id]}
+                      className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
                     >
                       <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                      Sepete Ekle
+                      {loadingStates[item.id] ? "Ekleniyor..." : "Sepete Ekle"}
                     </button>
                     
                     <button
                       onClick={() => handleRemoveFromFavorites(item.id)}
-                      className="p-1.5 sm:p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                      disabled={loadingStates[item.id]}
+                      className="p-1.5 sm:p-2 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors"
                     >
                       <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>

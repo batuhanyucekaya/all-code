@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddRazorPages(); // Razor Pages ekle
+builder.Services.AddRazorPages();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -14,7 +14,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Email servisi ekle
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddCors(options =>
@@ -24,11 +23,10 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000")
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials(); // Cookie'ler için gerekli
+              .AllowCredentials();
     });
 });
 
-// Cookie Authentication ekle
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -36,10 +34,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LogoutPath = "/logout";
         options.Cookie.Name = "YourAppAuthCookie";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.None; // Development için None
-        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax; // CORS için gerekli
+        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.None;
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
         options.SlidingExpiration = true;
-        options.ExpireTimeSpan = TimeSpan.FromDays(30); // 30 gün
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
     });
 
 var app = builder.Build();
@@ -51,7 +49,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles(); // Static dosyalar için
+app.UseStaticFiles();
 
 app.UseCors("AllowFrontend");
 
@@ -59,6 +57,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapRazorPages(); // Razor Pages route'larını ekle
+app.MapRazorPages();
 
 app.Run();

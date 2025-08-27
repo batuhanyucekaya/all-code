@@ -3,6 +3,7 @@
 import "./globals.css"
 import type { ReactNode } from "react"
 import Navbar from "./components/navbar"
+import Footer from "./components/footer"
 import { usePathname } from "next/navigation"
 import BotWidget from "./components/BotWidget"
 import { CartProvider } from "./lib/cart-context"
@@ -31,9 +32,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="bg-gray-50 relative min-h-screen">
         <CartProvider>
           {showNavbar && <Navbar />}
-          <main className="min-h-screen pb-20">{children}</main>
+          <main className="min-h-screen pt-0">{children}</main>
+          {showNavbar && <Footer />}
 
-          <div className="fixed z-[9999]
+          <div className="fixed z-40
                           right-[max(1rem,env(safe-area-inset-right))]
                           bottom-[max(1rem,env(safe-area-inset-bottom))]">
             <BotWidget />

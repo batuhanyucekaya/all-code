@@ -5,6 +5,7 @@ import { useCart } from "../lib/cart-context"
 import { ShoppingCart, Trash2, Minus, Plus, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 
 export default function CartPage() {
   const { cartItems, removeFromCart, updateCartItemQuantity, getCartTotal, clearCart } = useCart()
@@ -12,37 +13,31 @@ export default function CartPage() {
 
   const handleQuantityChange = async (productId: number, newQuantity: number) => {
     if (newQuantity >= 1) {
-      await updateCartItemQuantity(productId, newQuantity)
+      try {
+        await updateCartItemQuantity(productId, newQuantity)
+      } catch (error) {
+        toast.error('Miktar güncellenirken bir hata oluştu')
+      }
     }
   }
 
   const handleRemoveItem = async (productId: number) => {
-    await removeFromCart(productId)
-    
-    // Başarı mesajı göster
-    const toast = document.createElement('div')
-    toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg shadow-lg z-50 text-sm sm:text-base'
-    toast.textContent = 'Ürün sepetten kaldırıldı'
-    document.body.appendChild(toast)
-    
-    setTimeout(() => {
-      document.body.removeChild(toast)
-    }, 2000)
+    try {
+      await removeFromCart(productId)
+      toast.success('Ürün sepetten kaldırıldı')
+    } catch (error) {
+      toast.error('Ürün kaldırılırken bir hata oluştu')
+    }
   }
 
   const handleClearCart = async () => {
     if (confirm("Sepeti temizlemek istediğinizden emin misiniz?")) {
-      await clearCart()
-      
-      // Başarı mesajı göster
-      const toast = document.createElement('div')
-      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-3 sm:px-4 py-2 rounded-lg shadow-lg z-50 text-sm sm:text-base'
-      toast.textContent = 'Sepet temizlendi'
-      document.body.appendChild(toast)
-      
-      setTimeout(() => {
-        document.body.removeChild(toast)
-      }, 2000)
+      try {
+        await clearCart()
+        toast.success('Sepet temizlendi')
+      } catch (error) {
+        toast.error('Sepet temizlenirken bir hata oluştu')
+      }
     }
   }
 
@@ -118,9 +113,12 @@ export default function CartPage() {
                   {/* Product Image */}
                   <div className="flex-shrink-0 flex justify-center sm:justify-start">
                     <img
-                      src={item.resim_url}
-                      alt={item.isim}
+                      src={item.resim_url || "/placeholder-product.jpg"}
+                      alt={item.isim || "Ürün resmi"}
                       className="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-gray-50 rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder-product.jpg"
+                      }}
                     />
                   </div>
 

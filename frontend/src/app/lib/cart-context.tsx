@@ -45,18 +45,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [favoriteItems, setFavoriteItems] = useState<FavoriteItem[]>([])
   const [currentMusteriId, setCurrentMusteriId] = useState<number | null>(null)
-
-  // Kullanıcı verilerini yükle
   const loadUserData = useCallback(async (musteriId: number) => {
     try {
-      // console.log('Kullanıcı verileri yükleniyor:', musteriId)
-      
-      // Sepet verilerini yükle
       const cartResponse = await fetch(`${API_BASE_URL}/sepet/musteri/${musteriId}`)
-              // console.log('Sepet response:', cartResponse.status)
       if (cartResponse.ok) {
         const cartData = await cartResponse.json()
-                  // console.log('Sepet verileri:', cartData)
         const formattedCartItems = cartData.map((item: any) => ({
           id: item.urun.id,
           isim: item.urun.isim,
@@ -65,17 +58,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
           quantity: item.miktar
         }))
         setCartItems(formattedCartItems)
-                  // console.log('Sepet yüklendi:', formattedCartItems.length, 'ürün')
       } else {
         console.error('Sepet yükleme hatası:', await cartResponse.text())
       }
 
-      // Favori verilerini yükle
       const favoritesResponse = await fetch(`${API_BASE_URL}/favori/musteri/${musteriId}`)
-              // console.log('Favori response:', favoritesResponse.status)
       if (favoritesResponse.ok) {
         const favoritesData = await favoritesResponse.json()
-                  // console.log('Favori verileri:', favoritesData)
         const formattedFavoriteItems = favoritesData.map((item: any) => ({
           id: item.urun.id,
           isim: item.urun.isim,
@@ -83,26 +72,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
           resim_url: item.urun.resim_url
         }))
         setFavoriteItems(formattedFavoriteItems)
-                  // console.log('Favoriler yüklendi:', formattedFavoriteItems.length, 'ürün')
       } else {
         console.error('Favori yükleme hatası:', await favoritesResponse.text())
       }
       
-      // En son currentMusteriId'yi güncelle
       setCurrentMusteriId(musteriId)
     } catch (error) {
       console.error('Kullanıcı verileri yüklenirken hata:', error)
     }
   }, [])
-
-  // Sayfa yüklendiğinde kullanıcı zaten giriş yapmışsa verileri yükle
   useEffect(() => {
     const userData = localStorage.getItem('user')
     if (userData && !currentMusteriId) {
       try {
         const user = JSON.parse(userData)
         if (user.id) {
-          // console.log('Sayfa yüklendi, kullanıcı verileri yükleniyor:', user.id)
           loadUserData(user.id)
         }
       } catch (error) {
@@ -111,22 +95,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [currentMusteriId, loadUserData])
-
-  // Kullanıcı giriş/çıkış event'lerini dinle
   useEffect(() => {
     const handleUserLogin = (event: CustomEvent) => {
       if (event.detail && event.detail.id) {
-        // console.log('Kullanıcı giriş yaptı, veriler yükleniyor:', event.detail.id)
         loadUserData(event.detail.id)
       }
     }
 
     const handleUserLogout = () => {
-              // console.log('Kullanıcı çıkış yaptı')
       setCurrentMusteriId(null)
       setCartItems([])
       setFavoriteItems([])
-      // Veriler temizlenmez, kalıcı kalır
     }
 
     window.addEventListener('userLogin', handleUserLogin as EventListener)
@@ -138,11 +117,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [loadUserData])
 
-  // LocalStorage kaydetme kaldırıldı - sadece giriş yapmış kullanıcılar veri saklayabilir
-
   const addToCart = async (product: any, quantity: number = 1) => {
     if (currentMusteriId) {
-      // Backend'e gönder
       try {
         const response = await fetch(`${API_BASE_URL}/sepet/ekle`, {
           method: 'POST',
@@ -157,30 +133,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
         })
 
         if (response.ok) {
-          // Sepeti yeniden yükle
           await loadUserData(currentMusteriId)
         } else {
-          console.error('Sepete ekleme hatası:', await response.text())
+          const errorText = await response.text()
+          console.error('Sepete ekleme hatası:', errorText)
+          throw new Error(errorText)
         }
       } catch (error) {
         console.error('Sepete ekleme hatası:', error)
+        throw error
       }
     } else {
-      // Giriş yapmamış kullanıcı - işlem yapılamaz
-              toast.error('Sepete eklemek için giriş yapmalısınız')
+      const error = new Error('Sepete eklemek için giriş yapmalısınız')
+      toast.error('Sepete eklemek için giriş yapmalısınız')
+      throw error
     }
   }
 
   const removeFromCart = async (productId: number) => {
     if (currentMusteriId) {
-      // Backend'den sil
       try {
         const response = await fetch(`${API_BASE_URL}/sepet/sil/${currentMusteriId}/${productId}`, {
           method: 'DELETE'
         })
 
         if (response.ok) {
-          // Sepeti yeniden yükle
           await loadUserData(currentMusteriId)
         } else {
           console.error('Sepetten silme hatası:', await response.text())
@@ -189,7 +166,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         console.error('Sepetten silme hatası:', error)
       }
     } else {
-      // Giriş yapmamış kullanıcı - işlem yapılamaz
               toast.error('Sepetten silmek için giriş yapmalısınız')
     }
   }
@@ -211,17 +187,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
         })
 
         if (response.ok) {
-          // Sepeti yeniden yükle
           await loadUserData(currentMusteriId)
         } else {
-          console.error('Sepet güncelleme hatası:', await response.text())
+          const errorText = await response.text()
+          console.error('Sepet güncelleme hatası:', errorText)
+          throw new Error(errorText)
         }
       } catch (error) {
         console.error('Sepet güncelleme hatası:', error)
+        throw error
       }
     } else {
-      // Giriş yapmamış kullanıcı - işlem yapılamaz
-              toast.error('Sepet miktarını güncellemek için giriş yapmalısınız')
+      const error = new Error('Sepet miktarını güncellemek için giriş yapmalısınız')
+      toast.error('Sepet miktarını güncellemek için giriş yapmalısınız')
+      throw error
     }
   }
 
@@ -236,14 +215,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           setCartItems([])
         } else {
-          console.error('Sepet temizleme hatası:', await response.text())
+          const errorText = await response.text()
+          console.error('Sepet temizleme hatası:', errorText)
+          throw new Error(errorText)
         }
       } catch (error) {
         console.error('Sepet temizleme hatası:', error)
+        throw error
       }
     } else {
-      // Giriş yapmamış kullanıcı - işlem yapılamaz
-              toast.error('Sepeti temizlemek için giriş yapmalısınız')
+      const error = new Error('Sepeti temizlemek için giriş yapmalısınız')
+      toast.error('Sepeti temizlemek için giriş yapmalısınız')
+      throw error
     }
   }
 
@@ -311,14 +294,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
           // Favorileri yeniden yükle
           await loadUserData(currentMusteriId)
         } else {
-          console.error('Favorilerden silme hatası:', await response.text())
+          const errorText = await response.text()
+          console.error('Favorilerden silme hatası:', errorText)
+          throw new Error(errorText)
         }
       } catch (error) {
         console.error('Favorilerden silme hatası:', error)
+        throw error
       }
     } else {
       // Giriş yapmamış kullanıcı - işlem yapılamaz
-              toast.error('Favorilerden silmek için giriş yapmalısınız')
+      const error = new Error('Favorilerden silmek için giriş yapmalısınız')
+      toast.error('Favorilerden silmek için giriş yapmalısınız')
+      throw error
     }
   }
 

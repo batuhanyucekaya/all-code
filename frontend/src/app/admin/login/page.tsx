@@ -27,25 +27,41 @@ export default function AdminLoginPage() {
     setSuccess('')
 
     try {
-      // Admin şifresini kontrol et (gerçek uygulamada backend'den kontrol edilir)
-      const adminPassword = 'admin123' // Bu şifreyi değiştirin!
-      
-      if (password === adminPassword) {
-        // Admin giriş başarılı
+      const response = await fetch('http://localhost:5000/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: 'admin',
+          password: password
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
         setSuccess('🎉 Giriş başarılı! Yönlendiriliyorsunuz...')
+        
         localStorage.setItem('adminLoggedIn', 'true')
         localStorage.setItem('adminLoginTime', Date.now().toString())
+        localStorage.setItem('admin', JSON.stringify({
+          id: 1,
+          username: data.username,
+          fullName: data.fullName
+        }))
         
-        // Başarılı giriş animasyonu
         setTimeout(() => {
           router.push('/admin')
         }, 2000)
       } else {
-        setError('❌ Yanlış şifre! Lütfen tekrar deneyin.')
+        const errorData = await response.json()
+        setError(`❌ ${errorData.message || 'Giriş başarısız!'}`)
         setPassword('')
       }
     } catch (error) {
+      console.error('Admin login error:', error)
       setError('🌐 Bağlantı hatası! Lütfen tekrar deneyin.')
+      setPassword('')
     } finally {
       setIsLoading(false)
     }

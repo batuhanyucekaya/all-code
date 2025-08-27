@@ -121,6 +121,12 @@ namespace backend.Controllers
         public string? Telephone { get; set; }
     }
 
+    public class PasswordChangeRequest
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
         // POST: api/musteri/register
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest registerRequest)
@@ -240,6 +246,52 @@ namespace backend.Controllers
             {
                 _logger.LogError(ex, "Login error occurred");
                 return StatusCode(500, "Bir hata oluştu. Lütfen tekrar deneyin.");
+            }
+        }
+
+        // PUT: api/musteri/{id}/password
+        [HttpPut("{id}/password")]
+        public async Task<IActionResult> ChangePassword(int id, [FromBody] PasswordChangeRequest request)
+        {
+            try
+            {
+                // Input validation
+                if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+                {
+                    return BadRequest(new { error = "Mevcut şifre ve yeni şifre gereklidir." });
+                }
+
+                if (request.NewPassword.Length < 6)
+                {
+                    return BadRequest(new { error = "Yeni şifre en az 6 karakter olmalıdır." });
+                }
+
+                // Müşteriyi bul
+                var musteri = await _context.Musteriler.FindAsync(id);
+                if (musteri == null)
+                {
+                    return NotFound(new { error = "Müşteri bulunamadı." });
+                }
+
+                // Mevcut şifreyi kontrol et
+                if (musteri.Password != request.CurrentPassword)
+                {
+                    _logger.LogWarning($"Wrong current password for user ID: {id}");
+                    return BadRequest(new { error = "Mevcut şifre yanlış." });
+                }
+
+                // Yeni şifreyi güncelle
+                musteri.Password = request.NewPassword;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Password changed successfully for user ID: {id}");
+
+                return Ok(new { message = "Şifre başarıyla değiştirildi." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Password change error occurred");
+                return StatusCode(500, new { error = "Şifre değiştirme sırasında bir hata oluştu." });
             }
         }
     }

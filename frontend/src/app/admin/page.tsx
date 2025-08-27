@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import AdminProtectedLayout from "../components/admin-protected-layout"
-import { Plus, Edit, Trash2, Package, Users, Settings, Eye, EyeOff } from "lucide-react"
+import { Plus, Edit, Trash2, Package, Users, Settings, Eye, EyeOff, Lock, Save } from "lucide-react"
 import { toast } from "sonner"
 import ConfirmDialog from "../components/confirm-dialog"
 
@@ -102,7 +102,6 @@ const kategoriler = [
 
 const menuItems = ["Ürünler", "Müşteriler", "Ayarlar"]
 
-// Ürün Form Bileşeni
 function UrunForm({ urun, onSuccess, onCancel }: { urun: Urun | null, onSuccess: () => void, onCancel: () => void }) {
     const [isim, setIsim] = useState(urun?.isim || "")
     const [aciklama, setAciklama] = useState(urun?.aciklama || "")
@@ -125,8 +124,6 @@ function UrunForm({ urun, onSuccess, onCancel }: { urun: Urun | null, onSuccess:
             setAltKategoriler([])
         }
     }, [kategoriId, kategoriler])
-
-    // Yorumları yükle
     useEffect(() => {
         if (urun && showComments) {
             fetchComments(urun.id)
@@ -755,9 +752,7 @@ export default function AdminUrunlerPage() {
                 {activeMenu === "Ayarlar" && (
                     <div>
                         <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">Ayarlar</h2>
-                        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-                            <p className="text-gray-600">Ayarlar sayfası yakında eklenecek...</p>
-                        </div>
+                        <AdminPasswordChange />
                     </div>
                 )}
 
@@ -789,5 +784,180 @@ export default function AdminUrunlerPage() {
                 />
             </div>
         </AdminProtectedLayout>
+    )
+}
+
+// Admin Şifre Değiştirme Bileşeni
+function AdminPasswordChange() {
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+    })
+    const [showPasswords, setShowPasswords] = useState({
+        current: false,
+        new: false,
+        confirm: false
+    })
+    const [isLoading, setIsLoading] = useState(false)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        
+        setIsLoading(true)
+        
+        try {
+            if (passwordData.newPassword !== passwordData.confirmPassword) {
+                toast.error("Yeni şifreler eşleşmiyor!")
+                return
+            }
+            
+            if (passwordData.newPassword.length < 6) {
+                toast.error("Yeni şifre en az 6 karakter olmalıdır!")
+                return
+            }
+
+            const response = await fetch('http://localhost:5000/api/admin/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                toast.success("Şifre başarıyla değiştirildi!")
+                setPasswordData({
+                    currentPassword: "",
+                    newPassword: "",
+                    confirmPassword: ""
+                })
+            } else {
+                const errorData = await response.json()
+                toast.error(errorData.message || "Şifre değiştirilemedi!")
+            }
+        } catch (error) {
+            console.error('Şifre değiştirme hatası:', error)
+            toast.error("Şifre değiştirilirken bir hata oluştu!")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    return (
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+            <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Admin Şifre Değiştir</h3>
+                <p className="text-sm text-gray-600">Güvenliğiniz için şifrenizi düzenli olarak değiştirin.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Mevcut Şifre */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Mevcut Şifre
+                    </label>
+                    <div className="relative">
+                        <input
+                            type={showPasswords.current ? "text" : "password"}
+                            value={passwordData.currentPassword}
+                            onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Mevcut şifrenizi girin"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                            {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Yeni Şifre */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Yeni Şifre
+                    </label>
+                    <div className="relative">
+                        <input
+                            type={showPasswords.new ? "text" : "password"}
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Yeni şifrenizi girin (en az 6 karakter)"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                            {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Şifre Tekrar */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Yeni Şifre Tekrar
+                    </label>
+                    <div className="relative">
+                        <input
+                            type={showPasswords.confirm ? "text" : "password"}
+                            value={passwordData.confirmPassword}
+                            onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Yeni şifrenizi tekrar girin"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                            {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                    {isLoading ? (
+                        <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Değiştiriliyor...
+                        </div>
+                    ) : (
+                        <div className="flex items-center">
+                            <Save className="w-4 h-4 mr-2" />
+                            Şifreyi Değiştir
+                        </div>
+                    )}
+                </button>
+            </form>
+
+            {/* Güvenlik İpuçları */}
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">Güvenlik İpuçları:</h4>
+                <ul className="text-xs text-blue-800 space-y-1">
+                    <li>• Şifreniz en az 6 karakter olmalıdır</li>
+                    <li>• Büyük/küçük harf, rakam ve özel karakterler kullanın</li>
+                    <li>• Şifrenizi kimseyle paylaşmayın</li>
+                    <li>• Düzenli olarak şifrenizi değiştirin</li>
+                </ul>
+            </div>
+        </div>
     )
 }

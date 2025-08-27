@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace backend.Controllers
 {
@@ -16,100 +17,142 @@ namespace backend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, ILogger<AuthController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterRequest registerData)
         {
-            if (_context.Musteriler.Any(u => u.Email == registerData.Email))
-                return BadRequest("Email zaten kayıtlı.");
-
-            var musteri = new Musteri
+            try
             {
-                Email = registerData.Email,
-                Ad = registerData.FullName.Split(' ')[0], // İlk isim
-                Soyad = registerData.FullName.Contains(' ') ? registerData.FullName.Substring(registerData.FullName.IndexOf(' ') + 1) : "",
-                Telefon = registerData.Telephone,
-                Password = registerData.Password // Şifreyi plain text olarak kaydet
-            };
+                if (_context.Musteriler.Any(u => u.Email == registerData.Email))
+                    return BadRequest("Email zaten kayıtlı.");
 
-            _context.Musteriler.Add(musteri);
-            _context.SaveChanges();
+                var musteri = new Musteri
+                {
+                    Email = registerData.Email,
+                    Ad = registerData.FullName.Split(' ')[0], // İlk isim
+                    Soyad = registerData.FullName.Contains(' ') ? registerData.FullName.Substring(registerData.FullName.IndexOf(' ') + 1) : "",
+                    Telefon = registerData.Telephone,
+                    Password = registerData.Password // Şifreyi plain text olarak kaydet
+                };
 
-            return Ok("Kayıt başarılı");
+                _context.Musteriler.Add(musteri);
+                _context.SaveChanges();
+
+                return Ok("Kayıt başarılı");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Register failed");
+                return StatusCode(500, new { message = "Kayıt sırasında bir hata oluştu." });
+            }
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest loginData)
         {
-            if (string.IsNullOrEmpty(loginData.Email) || string.IsNullOrEmpty(loginData.Password))
-                return BadRequest("Email ve şifre gereklidir.");
-
-            // Şifreyi plain text olarak karşılaştır
-            var musteri = _context.Musteriler.FirstOrDefault(u => u.Email == loginData.Email && u.Password == loginData.Password);
-
-            if (musteri == null)
-                return Unauthorized(new { message = "Email veya şifre yanlış" });
-
-            var claims = new List<Claim>
+            try
             {
-                new Claim(ClaimTypes.Name, musteri.Ad + " " + musteri.Soyad),
-                new Claim(ClaimTypes.Email, musteri.Email),
-                new Claim("UserId", musteri.Id.ToString())
-            };
+                if (string.IsNullOrEmpty(loginData.Email) || string.IsNullOrEmpty(loginData.Password))
+                    return BadRequest("Email ve şifre gereklidir.");
 
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
+                // Şifreyi plain text olarak karşılaştır
+                var musteri = _context.Musteriler.FirstOrDefault(u => u.Email == loginData.Email && u.Password == loginData.Password);
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, new AuthenticationProperties
+                if (musteri == null)
+                    return Unauthorized(new { message = "Email veya şifre yanlış" });
+
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, musteri.Ad + " " + musteri.Soyad),
+                    new Claim(ClaimTypes.Email, musteri.Email),
+                    new Claim("UserId", musteri.Id.ToString())
+                };
+
+                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var principal = new ClaimsPrincipal(identity);
+
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTime.UtcNow.AddDays(30)
+                });
+
+                return Ok(new { message = "Giriş başarılı", userId = musteri.Id, fullName = musteri.Ad + " " + musteri.Soyad, email = musteri.Email });
+            }
+            catch (Exception ex)
             {
-                IsPersistent = true,
-                ExpiresUtc = DateTime.UtcNow.AddDays(30)
-            });
-
-            return Ok(new { message = "Giriş başarılı", userId = musteri.Id, fullName = musteri.Ad + " " + musteri.Soyad, email = musteri.Email });
+                _logger.LogError(ex, "Login failed");
+                return StatusCode(500, new { message = "Giriş sırasında bir hata oluştu." });
+            }
         }
 
         [HttpGet("user")]
         [Authorize]
         public IActionResult GetUser()
         {
-            var userName = HttpContext.User.Identity?.Name;
-            var userId = HttpContext.User.FindFirst("UserId")?.Value;
-            var userEmail = HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+            try
+            {
+                var userName = HttpContext.User.Identity?.Name;
+                var userId = HttpContext.User.FindFirst("UserId")?.Value;
+                var userEmail = HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
 
-            if (string.IsNullOrEmpty(userName))
-                return Unauthorized(new { message = "Kullanıcı bilgileri bulunamadı" });
+                if (string.IsNullOrEmpty(userName))
+                    return Unauthorized(new { message = "Kullanıcı bilgileri bulunamadı" });
 
-            return Ok(new { name = userName, userId = userId, email = userEmail });
+                return Ok(new { name = userName, userId = userId, email = userEmail });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetUser failed");
+                return StatusCode(500, new { message = "Kullanıcı bilgileri alınırken bir hata oluştu." });
+            }
         }
 
         [HttpPost("logout")]
         [Authorize]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Ok(new { message = "Çıkış başarılı" });
+            try
+            {
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return Ok(new { message = "Çıkış başarılı" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Logout failed");
+                return StatusCode(500, new { message = "Çıkış sırasında bir hata oluştu." });
+            }
         }
 
         [HttpGet("check")]
         public IActionResult CheckAuth()
         {
-            if (HttpContext.User.Identity?.IsAuthenticated == true)
+            try
             {
-                var userName = HttpContext.User.Identity.Name;
-                var userId = HttpContext.User.FindFirst("UserId")?.Value;
-                var userEmail = HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+                if (HttpContext.User.Identity?.IsAuthenticated == true)
+                {
+                    var userName = HttpContext.User.Identity.Name;
+                    var userId = HttpContext.User.FindFirst("UserId")?.Value;
+                    var userEmail = HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
 
-                return Ok(new { isAuthenticated = true, name = userName, userId = userId, email = userEmail });
+                    return Ok(new { isAuthenticated = true, name = userName, userId = userId, email = userEmail });
+                }
+                else
+                {
+                    return Ok(new { isAuthenticated = false });
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return Ok(new { isAuthenticated = false });
+                _logger.LogError(ex, "CheckAuth failed");
+                return StatusCode(500, new { message = "Kimlik doğrulama kontrolü sırasında bir hata oluştu." });
             }
         }
 
@@ -146,6 +189,7 @@ namespace backend.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "CreateTestUser failed");
                 return StatusCode(500, new { message = "Test kullanıcısı oluşturulurken hata: " + ex.Message });
             }
         }
@@ -174,6 +218,7 @@ namespace backend.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "FixPasswords failed");
                 return StatusCode(500, new { message = "Şifreler düzeltilirken hata: " + ex.Message });
             }
         }
@@ -196,6 +241,7 @@ namespace backend.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "ListUsers failed");
                 return StatusCode(500, new { message = "Kullanıcılar listelenirken hata: " + ex.Message });
             }
         }
